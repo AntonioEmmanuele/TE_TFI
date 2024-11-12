@@ -26,6 +26,7 @@ def sliding_win_cluster_aware(series, window_size_cluster, window_size_pred, win
         X_pred.append(pred_window)
         y.append(target)
     return np.array(X_cluster), np.array(X_pred), np.array(y)
+
 if __name__ == "__main__":
     seq = np.array([i for i in range(1,16)])
     win_cluster, win_pred, target = sliding_win_cluster_aware(seq, 5, 3, 1)
