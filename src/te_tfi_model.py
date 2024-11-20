@@ -2,7 +2,8 @@ from sklearn.cluster import KMeans
 from sklearn.tree import DecisionTreeRegressor
 from multiprocessing import cpu_count, Pool
 import numpy as np
-
+from sklearn.model_selection import GridSearchCV
+import json5
 
 def train_tree(dtr : DecisionTreeRegressor, X_train : np.ndarray, y_train : np.ndarray):
     dtr.fit(X_train, y_train)
@@ -22,7 +23,8 @@ class TE_TFI:
                     n_clusters      : int = 2, 
                     cluster_cfg     : dict = None,
                     random_state    : int = 42,
-                    tree_confs      : list = None):
+                    tree_confs      : list = None, 
+                    n_jobs          : int = -1):
         # Check the cluster type
         assert cluster_type in TE_TFI.__supported_clusters.keys(), "INSERT A SUPPORTED CLUSTER"
         assert n_clusters > 1, "Invalid number of clusters, please insert a value greater than 1"
@@ -33,7 +35,7 @@ class TE_TFI:
         self.cluster_cfg = cluster_cfg
         self.random_state = random_state
         self.tree_confs = tree_confs
-
+        self.n_jobs = n_jobs
         # Initialize the cluster
         if cluster_cfg is not None:
             self.cluster = TE_TFI.__supported_clusters[cluster_type](**cluster_cfg, n_clusters = n_clusters, random_state = random_state)
@@ -78,8 +80,38 @@ class TE_TFI:
             to_ret[indexes] = single_tree_preds
         return to_ret
     
+    def hyp_clusters(tree_params, cv_order: int = 1, disable_tqdm : bool = False, verb_gs : int = 1, json_out : str = None, refit : bool = True):
+        n_trees = len(self.trees)
+        if json_out is not None:
+            list_params = []
+        for idx in tqdm(range(0,n_trees), desc = "Hyp of trees", disable_tqdm = disable_tqdm):
+            grid_search = GridSearchCV(
+                estimator   = self.trees[idx],
+                param_grid  = tree_params,
+                cv          = cv_order,
+                scoring     = 'neg_mean_squared_error',  # Usando MSE come metrica
+                n_jobs      =   -1,
+                verbose     =   verb_gs
+            )
+            # Fit the CV.
+            # Log Best params
+            print(f"CV of tree {i}")
+            print("Params")
+            print(grid_search.grid_search.best_params_)
+            print("Score")
+            print(grid_search.grid_search.best_params_)
+            # Append to the list of params
+            if json_out is not None:
+                list_params.append({"Tree" : {idx}, "Params": params})
+            if refit :
+                self.trees[idx].fit()
+        # Save the final result.
+        if json_out is not None:
+            with open(json_out, "w") as f:
+                json5.dump(list, f, indent = 2)
+
     def __str__(self) -> str:
-        internal_params     = f"N.ro Clusters: {self.n_clusters}\nC.Type: {self.cluster_type}\nRandomState: {self.random_state}\n"
+        internal_params     = f"N.ro Clusters: {self.n_clusters}\nC.Type: {self.cluster_type}\nRandomState: {self.random_state} NJobs{self.n_jobs}\n"
         tree_confs          = f""
         tree_setted_confs   = f""
         for idx in range(0, self.n_clusters):
