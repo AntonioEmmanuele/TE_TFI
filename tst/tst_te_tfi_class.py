@@ -11,12 +11,14 @@ from src.te_tfi_model import TE_TFI
 
 if __name__ == "__main__":
     # Path della serie temporale
-    path = "./tst/087_UCR_Anomaly_DISTORTEDsel840mECG1_17000_51370_51740.txt" # For relative paths
+    path = "./datasets/processed/151_UCR_Anomaly_MesoplodonDensirostris_10000_19280_19440.txt" # For relative paths
+    train_perc = 0.7
+    series = np.loadtxt(path)
+    train_size = int(len(series) * train_perc)
     # Rimuovi componenti anomale.
-    series = np.loadtxt(path)[0:17000]
-    train_series = series[0:8500]
-    test_series = series[8500:]
-    plot = True
+    train_series = series[0:train_size]
+    test_series = series[train_size:]
+    plot = False
     if plot: 
         # plotta la Serie temporale.
         plt.plot(series)
@@ -24,7 +26,7 @@ if __name__ == "__main__":
         plt.ylabel("Values")
         plt.show()
         #exit(1)
-    window_size_cluster = 100
+    window_size_cluster = 500
     window_size_tree = 50
     win_pred = 1   
     n_clusters = 5 # Dimezzati perchè abbiamo train e test    
@@ -32,10 +34,10 @@ if __name__ == "__main__":
     print(f"La dimensione del cluster training è {len(train_wins_cluster)}")
     print(f"La dimensione del tree training è {len(train_target_tree)}")
     
-    test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware(series = train_series, window_size_cluster = window_size_cluster, window_size_pred = window_size_tree, win_out_pred = win_pred)
+    test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware(series = test_series, window_size_cluster = window_size_cluster, window_size_pred = window_size_tree, win_out_pred = win_pred)
 
     print(f"La dimensione del cluster testing è {len(train_wins_cluster)}")
-    print(f"La dimensione del tree testing è {len(train_target_tree)}")
+    print(f"La dimensione del tree testing è {len(test_wins_cluster)}")
     print(f" Alleniamo la classe TE-TFI")
     te_tfi = TE_TFI(
         n_clusters = n_clusters,
@@ -45,7 +47,6 @@ if __name__ == "__main__":
         }
         ] * n_clusters
     )
-    print(te_tfi)
     # print(train_target_tree)
     # exit(1)
     te_tfi.fit_clust_ts(hyst_buffers_cl = train_wins_cluster, train_wins_tree = train_wins_tree, train_target_tree = train_target_tree)

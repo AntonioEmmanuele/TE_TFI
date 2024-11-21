@@ -1,0 +1,35 @@
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+DT Fitted
+Esecuzione terminata 1.665983740997035
+Configurazioni 
+[{'max_depth': 5, 'max_features': 1.0}, {'max_depth': 5, 'max_features': 1.0}, {'max_depth': 5, 'max_features': 1.0}]
+Miglior risultato 
+[{'max_depth': 5, 'max_features': 1.0}, {'max_depth': 5, 'max_features': 1.0}, {'max_depth': 5, 'max_features': 1.0}]

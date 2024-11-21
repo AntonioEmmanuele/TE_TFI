@@ -10,12 +10,14 @@ from sklearn.ensemble import RandomForestRegressor
 
 if __name__ == "__main__":
     # Path della serie temporale
-    path = "./tst/087_UCR_Anomaly_DISTORTEDsel840mECG1_17000_51370_51740.txt" # For relative paths
+    #path = "./datasets/processed/087_UCR_Anomaly_DISTORTEDsel840mECG1_17000_51370_51740.txt" # For relative paths
+    path = "./tst/005_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature1_4000_5391_5392.txt" # For relative paths
     # Rimuovi componenti anomale.
-    series = np.loadtxt(path)[0:17000]
-    train_series = series[0:8500]
-    test_series = series[8500:]
-    plot = True
+    series = np.loadtxt(path)
+    train_size =  int(0.7 * len(series))
+    train_series = series[:train_size]
+    test_series = series[train_size:]
+    plot = False
     if plot: 
         # plotta la Serie temporale.
         plt.plot(series)
@@ -23,15 +25,16 @@ if __name__ == "__main__":
         plt.ylabel("Values")
         plt.show()
         #exit(1)
-    window_size_cluster = 100
-    window_size_tree = 50
+    window_size_cluster = 2000
+    window_size_tree = 300
     win_pred = 1   
-    n_clusters = 5 # Dimezzati perchè abbiamo train e test    
+    n_clusters = 10 # Dimezzati perchè abbiamo train e test    
     train_wins_cluster, train_wins_tree, train_target_tree = sliding_win_cluster_aware(series = train_series, window_size_cluster = window_size_cluster, window_size_pred = window_size_tree, win_out_pred = win_pred)
+    test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware(series = test_series, window_size_cluster = window_size_cluster, window_size_pred = window_size_tree, win_out_pred = win_pred)
+
     print(f"La dimensione del cluster training è {len(train_wins_cluster)}")
     print(f"La dimensione del tree training è {len(train_target_tree)}")
     
-    test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware(series = train_series, window_size_cluster = window_size_cluster, window_size_pred = window_size_tree, win_out_pred = win_pred)
 
     print(f"La dimensione del cluster testing è {len(train_wins_cluster)}")
     print(f"La dimensione del tree testing è {len(train_target_tree)}")
@@ -106,7 +109,7 @@ if __name__ == "__main__":
     rt_mse = mean_squared_error(y_true = test_target_tree, y_pred = rt_preds)
     rt_mae = mean_absolute_error(y_true = test_target_tree, y_pred = rt_preds)
     print(f"RT MSE: {rt_mse} MAPE {rt_mape} MAE {rt_mae}")
-    
+    exit(1)
     rf = RandomForestRegressor(random_state = 42, n_estimators = 100, max_depth = 100)
     rf.fit(X = train_wins_tree, y = train_target_tree.ravel())
     rf_preds = rf.predict(test_wins_tree)

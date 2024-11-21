@@ -15,7 +15,7 @@ def predict_tree(dtr, X):
     return dtr.predict(X)
 
 class TE_TFI:
-    __supported_clusters ={
+    supported_clusters ={
         "KMeans" : KMeans
     }
     
@@ -27,7 +27,7 @@ class TE_TFI:
                     tree_confs      : list = None, 
                     n_jobs          : int = -1):
         # Check the cluster type
-        assert cluster_type in TE_TFI.__supported_clusters.keys(), "INSERT A SUPPORTED CLUSTER"
+        assert cluster_type in TE_TFI.supported_clusters.keys(), "INSERT A SUPPORTED CLUSTER"
         assert n_clusters > 1, "Invalid number of clusters, please insert a value greater than 1"
         
         # Save input parameters
@@ -39,9 +39,9 @@ class TE_TFI:
         self.n_jobs = n_jobs
         # Initialize the cluster
         if cluster_cfg is not None:
-            self.cluster = TE_TFI.__supported_clusters[cluster_type](**cluster_cfg, n_clusters = n_clusters, random_state = random_state)
+            self.cluster = TE_TFI.supported_clusters[cluster_type](**cluster_cfg, n_clusters = n_clusters, random_state = random_state)
         else:
-            self.cluster = TE_TFI.__supported_clusters[cluster_type](n_clusters = n_clusters, random_state = random_state)
+            self.cluster = TE_TFI.supported_clusters[cluster_type](n_clusters = n_clusters, random_state = random_state)
         
         # Initialize the trees
         if tree_confs is not None:
@@ -51,20 +51,20 @@ class TE_TFI:
             self.trees = [DecisionTreeRegressor(random_state = random_state) for i in range(0, n_clusters)]
         self.pool = Pool(n_clusters)
 
-    def fit_clust_ts(self, hyst_buffers_cl : np.ndarray, train_wins_tree_cluster : np.ndarray, train_wins_tree : np.ndarray, train_target_tree : np.ndarray, separate_hyp : bool = True):
+    def fit_clust_ts(self, hyst_buffers_cl : np.ndarray, train_wins_tree : np.ndarray, train_target_tree : np.ndarray, separate_hyp : bool = True):
         assert hyst_buffers_cl.ndim == 2, "Cluster hystorical buffer should be a 2D array"
         assert train_wins_tree.ndim == 2, "Tree windows should be a 2D array"
         assert train_target_tree.ndim >= 1, "Target values for a single tree should be at least a 1D array"
         # Fit the clusters, obtaining the trees labels.
         self.cluster.fit(hyst_buffers_cl)
         # Infer the clusters for each tree, using a separate hyperparametrization function.
-        labels = self.cluster.predict(train_wins_tree_cluster)
+        labels = self.cluster.predict(hyst_buffers_cl)
         #labels = self.cluster.fit_predict(hyst_buffers_cl)
         # Now train the trees.
         args = [[self.trees[i], train_wins_tree[labels == i], train_target_tree[labels == i]] for i in range(0, self.n_clusters)]
         # Starmap works with a copy, so reassign the trees.
         self.trees = self.pool.starmap(train_tree, args)
-    
+        
     def predict_clust_ts(self, hyst_buff_cl : np.ndarray, wins_tree : np.ndarray):
         assert hyst_buff_cl.ndim == 2, "Cluster hystorical buffer should be a 2D array"
         assert wins_tree.ndim == 2, "Tree windows should be a 2D array"
