@@ -16,7 +16,7 @@ def sliding_win_target(series, window_size, win_out):
     return np.array(X), np.array(y)
 
 def sliding_win_cluster_aware(series, window_size_cluster, window_size_pred, win_out_pred):
-    assert window_size_cluster > window_size_pred
+    assert window_size_cluster >= window_size_pred
     X_cluster, X_pred, y = [], [], []
     for i in range(len(series) - window_size_cluster - win_out_pred + 1):
         cluster = series[i:i + window_size_cluster]      

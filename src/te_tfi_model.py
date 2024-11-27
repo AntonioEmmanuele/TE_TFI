@@ -4,7 +4,7 @@ from multiprocessing import cpu_count, Pool
 import numpy as np
 #from sklearn.model_selection import GridSearchCV
 import json5
-
+from tslearn.clustering import KShape
 
 def train_tree(dtr : DecisionTreeRegressor, X_train : np.ndarray, y_train : np.ndarray):
     dtr.fit(X_train, y_train)
@@ -16,7 +16,8 @@ def predict_tree(dtr, X):
 
 class TE_TFI:
     supported_clusters ={
-        "KMeans" : KMeans
+        "KMeans" : KMeans,
+        "KShape" : KShape
     }
     
     def __init__(   self, 
