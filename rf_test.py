@@ -56,8 +56,8 @@ if __name__ == "__main__":
         plt.ylabel("Values")
         plt.show()
         #exit(1)
-    window_size_cluster = 200
-    window_size_tree = 50
+    window_size_cluster = 20
+    window_size_tree = 10
     win_pred = 1   
     n_clusters = 4 # Dimezzati perchè abbiamo train e test    
     train_wins_cluster, train_wins_tree, train_target_tree = sliding_win_cluster_aware(series = train_series, window_size_cluster = window_size_cluster, window_size_pred = window_size_tree, win_out_pred = win_pred)
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # print(f" Alleniamo la classe TE-TFI, con Cluster pari a {n_clusters}")
 
     te_tfi = TE_TFI(
-        cluster_type="KShape",
+        cluster_type="KMeans",
         n_clusters = n_clusters,
         cluster_cfg={ "verbose" : True},
         random_state = 42,
@@ -86,41 +86,42 @@ if __name__ == "__main__":
     )
     # print(train_target_tree)
     # exit(1)
-    te_tfi.fit_clust_ts(hyst_buffers_cl = train_wins_cluster, train_wins_tree = train_wins_tree, train_target_tree = train_target_tree)
-    class_inferences = te_tfi.predict_clust_ts(hyst_buff_cl = test_wins_cluster, wins_tree = test_wins_tree)
     
-    mape_te = mean_absolute_percentage_error(y_true = test_target_tree, y_pred = class_inferences)
-    mse_te = mean_squared_error(y_true = test_target_tree, y_pred = class_inferences)
-    mae_te = mean_absolute_error(y_true = test_target_tree, y_pred = class_inferences)
-    print(f"TE TFI CLASS:  MSE: {mse_te} MAPE {mape_te} MAE {mae_te}")
+    # te_tfi.fit_clust_ts(hyst_buffers_cl = train_wins_cluster.append(test_wins_cluster), train_wins_tree = train_wins_tree, train_target_tree = train_target_tree)
+    # class_inferences = te_tfi.predict_clust_ts(hyst_buff_cl = test_wins_cluster, wins_tree = test_wins_tree)
+    # mape_te = mean_absolute_percentage_error(y_true = test_target_tree, y_pred = class_inferences)
+    # mse_te = mean_squared_error(y_true = test_target_tree, y_pred = class_inferences)
+    # mae_te = mean_absolute_error(y_true = test_target_tree, y_pred = class_inferences)
+    # print(f"TE TFI CLASS:  MSE: {mse_te} MAPE {mape_te} MAE {mae_te}")
+    
     # # exit(1)
-    # kmeans = KMeans(n_clusters = n_clusters, random_state = 42)
-    # labels = kmeans.fit_predict(train_wins_cluster)
-    # trees = []
-    # # test_cluster_labels = kmeans.predict(test_wins_cluster)
-    # # print(test_cluster_labels)
-    # # exit(1)
-    # for i in range(n_clusters):    
-    #     # Get the time series in different clusters.
-    #     cluster_ts = train_wins_cluster[labels == i]
-    #     tree_ts = train_wins_tree[labels == i]
-    #     tree_ts_target = train_target_tree[labels == i]
-    #     if plot :
-    #         plt.figure(figsize=(10, 6))
-    #         # Plot cluster wins
-    #         for seq in cluster_ts:
-    #             plt.plot(seq, alpha=0.4)
-    #         plt.title(f'Cluster {i+1}')
-    #         plt.xlabel('Sample')
-    #         plt.ylabel('Values')
-    #         plt.show()
-    #         # Plot tree series wins
-    #         for seq in tree_ts:
-    #             plt.plot(seq, alpha=0.4)
-    #         plt.title(f'Cluster Tree {i+1}')
-    #         plt.xlabel('Sample')
-    #         plt.ylabel('Values')
-    #         plt.show()
+    kmeans = KMeans(n_clusters = n_clusters, random_state = 42)
+    labels = kmeans.fit_predict(train_wins_cluster)
+    trees = []
+    # test_cluster_labels = kmeans.predict(test_wins_cluster)
+    # print(test_cluster_labels)
+    # exit(1)
+    for i in range(n_clusters):    
+        # Get the time series in different clusters.
+        cluster_ts = train_wins_cluster[labels == i]
+        tree_ts = train_wins_tree[labels == i]
+        tree_ts_target = train_target_tree[labels == i]
+        # if plot :
+        #     plt.figure(figsize=(10, 6))
+        #     # Plot cluster wins
+        #     for seq in cluster_ts:
+        #         plt.plot(seq, alpha=0.4)
+        #     plt.title(f'Cluster {i+1}')
+        #     plt.xlabel('Sample')
+        #     plt.ylabel('Values')
+        #     plt.show()
+        #     # Plot tree series wins
+        #     for seq in tree_ts:
+        #         plt.plot(seq, alpha=0.4)
+        #     plt.title(f'Cluster Tree {i+1}')
+        #     plt.xlabel('Sample')
+        #     plt.ylabel('Values')
+        #     plt.show()
             
     #     # Train a tree
     #     print(f"Fitting tree for cluster {i + 1}")
