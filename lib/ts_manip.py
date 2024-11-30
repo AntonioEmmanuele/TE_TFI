@@ -145,7 +145,43 @@ def sliding_win_clust_aw_target_timestamps(series, time_series_timestamps, windo
         y_ts.append(target_ts)
     return np.array(X_cluster), np.array(X_cluster_ts), np.array(X_pred), np.array(X_pred_ts), np.array(y), np.array(y_ts)
 
+def partition_series(series, elements_per_partition):
+    """
+    Partitions a series into equal-length parts based on the number of elements per partition.
+    
+    Parameters:
+        series (list or numpy.ndarray): The series to be partitioned.
+        elements_per_partition (int): The number of elements in each partition.
+        
+    Returns:
+        list of numpy.ndarray: A list containing the partitioned parts as numpy arrays.
+    """
+    series = np.array(series)  # Ensure the input is a numpy array
+    series_length = len(series)
+    
+    # Calculate the number of partitions and trim the excess elements
+    num_partitions = series_length // elements_per_partition
+    trimmed_length = num_partitions * elements_per_partition
+    series = series[:trimmed_length]
+    
+    # Split the series into partitions
+    return [series[i * elements_per_partition:(i + 1) * elements_per_partition] 
+            for i in range(num_partitions)]
 
+
+def partition_series_multivariate(series, elements_per_partition):
+
+    #series = np.array(series)  # Ensure the input is a numpy array
+    series_length = len(series)
+    
+    # Calculate the number of partitions and trim the excess elements
+    num_partitions = series_length // elements_per_partition
+    trimmed_length = num_partitions * elements_per_partition
+    series = series[:trimmed_length]
+    
+    # Split the series into partitions
+    return [series.iloc[i * elements_per_partition:(i + 1) * elements_per_partition].values.reshape(-1) 
+            for i in range(num_partitions)]
 if __name__ == "__main__":
     seq = np.array([i for i in range(1,20)])
     offset = 1
