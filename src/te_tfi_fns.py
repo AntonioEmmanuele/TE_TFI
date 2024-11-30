@@ -189,7 +189,7 @@ if __name__ == "__main__":
                                     num_clusters = 5,
                                     tree_params = param_grid,
                                     time_series = train_series,
-                                    cv_order = 10,
+                                    cv_order = 5,
                                     tree_cv_perc_start = 0.0,
                                     clust_perc = -1,
                                     n_jobs = os.cpu_count(),
