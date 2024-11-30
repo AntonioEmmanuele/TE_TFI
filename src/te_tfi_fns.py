@@ -9,6 +9,9 @@ from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, 
 import numpy as np
 import time 
 from sklearn.cluster import KMeans
+from tslearn.clustering import TimeSeriesKMeans
+from sklearn.metrics import silhouette_score
+
 from tqdm import tqdm
 
 def list_partitioning(a_list, num_of_partitions):
@@ -31,11 +34,14 @@ def generate_hyperparameter_grid(hyperparameters):
 def validate_series(configurations, x_labels, y_labels, cv_order, starting_percentage):
     starting_rolling = int(starting_percentage * len(x_labels))
     rolling_offset   = int((len(x_labels) - starting_rolling) / cv_order)
-    metrics = []
-    #print(f"Alberi allenati con {len(x_labels)}")
+    mse = []
+    mape = []
+    mae = []
     # For each configuration
     for conf in configurations:
-        metric_per_conf = []     # Vector containing the metrics for each cv.
+        mse_per_conf = []     # Vector containing the metrics for each cv.
+        mape_per_conf= []
+        mae_per_conf = []
         for i in range(cv_order):
             # Split samples based on the rolling window approach, remember that these samples
             # are the win_trees which are the outputs of the cluster.
@@ -46,38 +52,42 @@ def validate_series(configurations, x_labels, y_labels, cv_order, starting_perce
             model = DecisionTreeRegressor(**conf, random_state = 42)
             model.fit(train_x, train_y)
             outcomes = model.predict(val_x)
-            metric_per_conf.append(mean_squared_error(y_true = val_y, y_pred = outcomes))
-        metrics.append(np.mean(metric_per_conf))
-    return np.array(metrics)
+            mse_per_conf.append(mean_squared_error(y_true = val_y, y_pred = outcomes))
+            mae_per_conf.append(mean_absolute_percentage_error(y_true = val_y, y_pred = outcomes))
+            mape_per_conf.append(mean_absolute_error(y_true = val_y, y_pred = outcomes))
+        mse.append(np.mean(mse_per_conf))
+        mape.append(np.mean(mape_per_conf))
+        mae.append(np.mean(mae_per_conf))
+    return np.array(mse), np.array(mape), np.array(mae)
 
 
-def hyp_trees(  cluster_type,
-                cluster_cfg,
-                num_clusters,
+def hyp_trees(  cluster_type,           # Type of the cluster
+                cluster_cfg,            # Configuration of the cluster
+                num_clusters,           # Number of clusters
                 tree_params,            # Cross validation parameters for trees
                 time_series,            # Time series in consideration
                 cv_order = 5,           # Cross validation order for each single tree
                 tree_cv_perc_start = 0.5,   # Starting percentage for tree rolling window
-                clust_perc = 0.4,       # Percentage of data used for clustering
-                win_size_cluster = 100, # Window size of the cluster TS
-                win_size_tree = 50,     # Window size of trees TS.
+                clust_perc = 0.4,           # Percentage of data used for clustering
+                win_size_cluster = 100,     # Window size of the cluster TS
+                win_size_tree = 50,         # Window size of trees TS.
                 n_jobs = os.cpu_count(),    # Number of parallel workers
-                disable_tqdm = False
+                disable_tqdm = False        # Disable the TQDM
             ):
     # Split the cluster and trees set.
     cluster_ts_size = int(clust_perc * len(time_series))
     if clust_perc == -1:
-        cluster_ts_size = int(clust_perc * len(time_series))
-        cluster_series  = time_series[0 : -1]
-    else:
         cluster_ts_size = 0
+        cluster_series  = time_series
+    else:
+        cluster_ts_size = int(clust_perc * len(time_series))
         cluster_series  = time_series
     trees_train_series = time_series[cluster_ts_size : ]    # Spit the time series and also the clusters
     # if len(timestamps) > 0:                                     # Supports also the absence of timestamps.
     #     trees_train_series = time_series[cluster_ts_size : ]    # Spit the time series and also the clusters
+
     # Get the cluster training sliding windows
     cluster_train_wins = sliding_win(cluster_series, window_size = win_size_cluster)
-    
     # Get the trees training windows
     win_cluster, win_pred, target =  sliding_win_cluster_aware(
                                                         series = trees_train_series,
@@ -85,11 +95,14 @@ def hyp_trees(  cluster_type,
                                                         window_size_pred = win_size_tree, 
                                                         win_out_pred = 1                    
                                                         )
+
     # Train the cluster.
     cluster = TE_TFI.supported_clusters[cluster_type](**cluster_cfg, n_clusters = num_clusters, random_state = 42)
     cluster.fit(cluster_train_wins)
     # Get the labels for trees samples and their respective values.
     labels = cluster.predict(win_cluster)
+    # Evaluate the sil score
+    sil_score = silhouette_score(win_cluster, labels=labels)
     # Identify the labels for each sample
     trees_X = [ win_pred[labels == j] for j in range(0, num_clusters)] 
     trees_y = [ target[labels == j] for j in range(0, num_clusters)]
@@ -98,7 +111,11 @@ def hyp_trees(  cluster_type,
     params_per_cpu = list_partitioning(list_params, n_jobs)
     pool = Pool(n_jobs)
     cfg_per_tree = []
-    min_acc_per_tree = []
+    min_mse_per_tree = []
+    min_mape_per_tree = []
+    min_mae_per_tree = []
+
+    id_results = 0 # MSE MAPE or MAE for CV
     # For each tree
     for tree_idx in tqdm(range(0, num_clusters), desc = "Evaluating configurations", disable = disable_tqdm):
         # Get the elements for each time window
@@ -106,15 +123,23 @@ def hyp_trees(  cluster_type,
         t_y = trees_y[tree_idx]
         # Compute execute the cross-validation with pool and select the best series.            
         args = [[cpu_param, t_X, t_y, cv_order, tree_cv_perc_start] for cpu_param in params_per_cpu]
+        #mse, mape, mae = pool.starmap(validate_series, args)
         results = pool.starmap(validate_series, args)
-        results = np.concatenate(results)
-        best_result_idx = np.argmin(results)
+        results[0] = np.concatenate(results[0])
+        results[1] = np.concatenate(results[1])
+        results[2] = np.concatenate(results[2])
+        best_result_idx = np.argmin(results[id_results])
         # Append to the results.
         cfg_per_tree.append(list_params[best_result_idx])
-        min_acc_per_tree.append(results[best_result_idx])
+        min_mse_per_tree.append(results[0][best_result_idx])
+        min_mape_per_tree.append(results[1][best_result_idx])
+        min_mae_per_tree.append(results[2][best_result_idx])
+
     pool.close()
     pool.join()
-    return cfg_per_tree, min_acc_per_tree
+    return cfg_per_tree, min_mse_per_tree, min_mape_per_tree, min_mae_per_tree, sil_score
+
+
 # Funzione che effettua la cross-validazione di una configurazione di cluster 
 # cercando la miglior configurazione per albero.
 def cross_validate_cluster_with_tree_hyp():

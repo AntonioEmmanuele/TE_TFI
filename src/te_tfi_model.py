@@ -4,7 +4,8 @@ from multiprocessing import cpu_count, Pool
 import numpy as np
 #from sklearn.model_selection import GridSearchCV
 import json5
-from tslearn.clustering import KShape
+from tslearn.clustering import KShape,TimeSeriesKMeans
+from sklearn.metrics import silhouette_score
 
 def train_tree(dtr : DecisionTreeRegressor, X_train : np.ndarray, y_train : np.ndarray):
     dtr.fit(X_train, y_train)
@@ -17,7 +18,8 @@ def predict_tree(dtr, X):
 class TE_TFI:
     supported_clusters ={
         "KMeans" : KMeans,
-        "KShape" : KShape
+        "KShape" : KShape,
+        "TimeSeriesKMeans": TimeSeriesKMeans
     }
     
     def __init__(   self, 
@@ -73,6 +75,7 @@ class TE_TFI:
         to_ret = np.zeros(len(wins_tree))
         # Classify each sample
         ids_tree = self.cluster.predict(hyst_buff_cl)
+        
         # Divide samples per each tree
         args = [[self.trees[i], wins_tree[ids_tree == i]] for i in range(0, self.n_clusters)]
         # Divide the ids for sorting.
@@ -83,7 +86,8 @@ class TE_TFI:
         # Sort values for each different tree.
         for single_tree_preds, indexes in zip(preds_per_tree, final_vector_indexes):
             to_ret[indexes] = single_tree_preds
-        return to_ret
+        sil = silhouette_score(hyst_buff_cl, ids_tree)
+        return to_ret, sil
     
     # def hyp_clusters(tree_params, cv_order: int = 1, disable_tqdm : bool = False, verb_gs : int = 1, json_out : str = None, refit : bool = True):
     #     n_trees = len(self.trees)

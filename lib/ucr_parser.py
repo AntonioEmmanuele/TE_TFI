@@ -3,6 +3,7 @@ import os
 from tqdm import tqdm
 import math
 from .ts_manip import aggregate_with_mean_time_window
+
 def ucr_clean_from_anomalies(time_series, training_start):
     return time_series[0 : training_start]
 
@@ -30,3 +31,6 @@ def ucr_process_all_ts(in_path, out_path, size_thd = 20000, aggr_win_size = 5, d
         if len(series) > size_thd:
             series = aggregate_with_mean_time_window(series = series, window_size = aggr_win_size)
         np.savetxt(ts_out_path, series)
+
+# def get_series_name(file_series):
+#     return file_series[:3]

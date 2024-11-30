@@ -1,2 +1,14 @@
 #!/bin/bash
-python3 ./hyp_cluster.py --path_stagionality "./tst/ucr_seasonality_results_0.6.csv" --num_cluster 5 --win_clust 50 --series_path "./datasets/processed/011_UCR_Anomaly_DISTORTEDECG1_10000_11800_12100.txt" --lag_percentage 0.5
+clusters=(2 3 4 5 6 7 8 9 10 15 20)
+percentages=(0.5 1.0 1.5 2.0)
+win_clust=50
+
+for file in ./datasets/processed/*; do
+    for n_clust in "${clusters[@]}"; do
+        for perc_clust  in "${percentages[@]}"; do
+        #    echo "$file"
+            python3 ./hyp_cluster.py --path_stagionality "./tst/ucr_seasonality_results_0.6.csv" --num_cluster $n_clust --win_clust $win_clust --series_path $file  --lag_percentage $perc_clust
+    done
+  done
+done
+
