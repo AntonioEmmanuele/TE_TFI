@@ -245,6 +245,7 @@ file,has_seasonality,max_lag_autocorr,max_lag_autocorr_value,biggest_lag,biggest
 244_UCR_Anomaly_tilt12754table_100013_104630_104890.txt,False,,,,
 245_UCR_Anomaly_tilt12754table_100211_270800_271070.txt,False,,,,
 246_UCR_Anomaly_tilt12755mtable_100211_270800_271070.txt,False,,,,
+247.txt,False,,,,
 248_UCR_Anomaly_weallwalk_2000_4702_4707.txt,False,,,,
 249_UCR_Anomaly_weallwalk_2753_8285_8315.txt,False,,,,
 250_UCR_Anomaly_weallwalk_2951_7290_7296.txt,False,,,,
