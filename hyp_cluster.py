@@ -5,11 +5,12 @@ from src.te_tfi_fns import hyp_trees
 import os
 from tslearn.clustering import TimeSeriesKMeans
 from src.te_tfi_model import TE_TFI
-from lib.ts_manip import sliding_win_cluster_aware
+from lib.ts_manip import sliding_win_cluster_aware, sliding_win_cluster_aware_multivariate
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 #from lib.ucr_parser import get_series_name
 import joblib
 import json5
+from sklearn.preprocessing import MinMaxScaler
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Script di esempio per accettare argomenti.")
@@ -23,12 +24,13 @@ if __name__ == "__main__":
     parser.add_argument('--win_tree_perc', type=float, required=False, default=1.0)
     parser.add_argument('--n_jobs', type=int, required=False, default=os.cpu_count())
     parser.add_argument('--out_path', type=str, required=False, default="./")
-    parser.add_argument('--is_multivariate', type=str, required=False, default=False)
-    parser.add_argument('--do_preprocess', type=str, required=False, default=False)
-    parser.add_argument('--target_column', type=str, required=False, default=False)
+    parser.add_argument('--is_multivariate', type=int, required=False, default=0)
+    parser.add_argument('--target_column', type=str, required=False, default=None)
 
     
     args = parser.parse_args()
+    if not os.path.exists(args.out_path):
+        os.makedirs(args.out_path)
     #assert not (args.is_multivariate != None and args.target_column == None)
     if not args.is_multivariate:
         series = np.loadtxt(args.series_path, dtype=float)
@@ -55,7 +57,7 @@ if __name__ == "__main__":
     else:
         win_clust = args.win_clust
 
-    if is_multivariate:
+    if args.is_multivariate:
         if args.target_column is None:
             target_column = stag_csv.loc[stag_csv['file'] == file, 'feature'].values[0]
         else:
@@ -89,10 +91,16 @@ if __name__ == "__main__":
                             )
     te_tfi = TE_TFI(cluster_type="KMeans", n_clusters = args.num_cluster, cluster_cfg = { "max_iter" : 500, "verbose": True}, tree_confs=trees_cfg, n_jobs=args.n_jobs)
     train_size = int(0.7 * len(series))
-    train_series = series[: train_size]
-    test_series = series[train_size : ]
-    train_wins_cluster, train_wins_tree, train_target_tree = sliding_win_cluster_aware(series = train_series, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
-    test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware(series = test_series, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
+    if not args.is_multivariate:
+        train_series = series[: train_size]
+        test_series = series[train_size : ]
+        train_wins_cluster, train_wins_tree, train_target_tree = sliding_win_cluster_aware(series = train_series, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
+        test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware(series = test_series, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
+    else:
+        train_series = series.iloc[: train_size]
+        test_series = series.iloc[train_size : ]
+        train_wins_cluster, train_wins_tree, train_target_tree = sliding_win_cluster_aware_multivariate(series = train_series, target_column = target_column, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
+        test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware_multivariate(series = test_series, target_column = target_column, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
     te_tfi.fit_clust_ts(train_wins_cluster, train_wins_tree, train_target_tree, False)
     preds, sil_fin = te_tfi.predict_clust_ts(test_wins_cluster, test_wins_tree)
     te_tfi_mse  = mean_squared_error(y_true = test_target_tree, y_pred = preds)
