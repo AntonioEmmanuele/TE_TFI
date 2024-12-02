@@ -87,20 +87,29 @@ if __name__ == "__main__":
     print(f"Sil Final: {sil_fin}")
 
     dict_out = {
+        "Series": series_name,
+        "NumClusters":args.num_cluster,
         "Sil Hyp": sil_score,
         "Sil Test": sil_fin,
         "Final MSE": te_tfi_mse,
         "Final MAPE": te_tfi_mape,
-        "Final MAE": te_tfi_mae 
+        "Final MAE": te_tfi_mae,
+        "Seasonal" : has_seasonality,
+        "Win_Clust" : win_clust,
+        "Win_Tree" : win_tree,
+        "Perc"      :args.lag_percentage
     }
-    csv_df = pd.DataFrame(dict_out)
-    csv_out_stats = os.path.join(args.out_path, "stats.csv")
+    csv_df = pd.DataFrame(dict_out, index = [0])
+    csv_out_stats = os.path.join(args.out_path, "stats_hyp.csv")
     add_header = not os.path.exists(csv_out_stats)
-    csv_df.to_csv(csv_out_stats, sep = ",", header=add_header, index=False)
+    csv_df.to_csv(csv_out_stats, sep = ",", header=add_header, index=False, mode = "a")
     # Dump the model
+    te_tfi.pool.close()
+    te_tfi.pool = None
     out_dir_model = os.path.join(args.out_path, f"models")
     if not os.path.exists(out_dir_model):
         os.makedirs(out_dir_model) 
+    te_tfi.pool
     out_models = os.path.join(out_dir_model, f"{series_name}.joblib")
     joblib.dump(te_tfi, out_models)
     # Dump Hyperparametrization
@@ -109,5 +118,5 @@ if __name__ == "__main__":
         os.makedirs(out_hyp_dir)
     out_hyp_model = os.path.join(out_hyp_dir, f"{series_name}.json5")
     with open(out_hyp_model, "w") as f:
-        json5.dump(trees_cfg)
+        json5.dump(trees_cfg, f, indent = 2)
     
