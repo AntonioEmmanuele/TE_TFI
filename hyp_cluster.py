@@ -99,8 +99,8 @@ if __name__ == "__main__":
     else:
         train_series = series.iloc[: train_size]
         test_series = series.iloc[train_size : ]
-        train_wins_cluster, train_wins_tree, train_target_tree = sliding_win_cluster_aware_multivariate(series = train_series, target_column = target_column, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
-        test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware_multivariate(series = test_series, target_column = target_column, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
+        train_wins_cluster, train_wins_tree, train_target_tree = sliding_win_cluster_aware_multivariate(series_df = train_series, target_column = target_column, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
+        test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware_multivariate(series_df = test_series, target_column = target_column, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
     te_tfi.fit_clust_ts(train_wins_cluster, train_wins_tree, train_target_tree, False)
     preds, sil_fin = te_tfi.predict_clust_ts(test_wins_cluster, test_wins_tree)
     te_tfi_mse  = mean_squared_error(y_true = test_target_tree, y_pred = preds)
