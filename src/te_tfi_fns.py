@@ -1,4 +1,4 @@
-from lib.ts_manip import sliding_win_cluster_aware, sliding_win
+from lib.ts_manip import sliding_win_cluster_aware, sliding_win, sliding_windows_multivariate, sliding_win_cluster_aware_multivariate
 from src.te_tfi_model import TE_TFI
 import numpy as np
 from multiprocessing import Pool
@@ -72,7 +72,9 @@ def hyp_trees(  cluster_type,           # Type of the cluster
                 win_size_cluster = 100,     # Window size of the cluster TS
                 win_size_tree = 50,         # Window size of trees TS.
                 n_jobs = os.cpu_count(),    # Number of parallel workers
-                disable_tqdm = False        # Disable the TQDM
+                disable_tqdm = False,        # Disable the TQDM
+                is_multivariate = False,
+                target_column = None
             ):
     # Split the cluster and trees set.
     cluster_ts_size = int(clust_perc * len(time_series))
@@ -82,20 +84,27 @@ def hyp_trees(  cluster_type,           # Type of the cluster
     else:
         cluster_ts_size = int(clust_perc * len(time_series))
         cluster_series  = time_series
-    trees_train_series = time_series[cluster_ts_size : ]    # Spit the time series and also the clusters
+    if not is_multivariate:
+        trees_train_series = time_series[cluster_ts_size : ]    # Spit the time series and also the clusters
+    else: # Split not supported 
+        trees_train_series = time_series
     # if len(timestamps) > 0:                                     # Supports also the absence of timestamps.
     #     trees_train_series = time_series[cluster_ts_size : ]    # Spit the time series and also the clusters
-
-    # Get the cluster training sliding windows
-    cluster_train_wins = sliding_win(cluster_series, window_size = win_size_cluster)
-    # Get the trees training windows
-    win_cluster, win_pred, target =  sliding_win_cluster_aware(
-                                                        series = trees_train_series,
-                                                        window_size_cluster = win_size_cluster, 
-                                                        window_size_pred = win_size_tree, 
-                                                        win_out_pred = 1                    
-                                                        )
-
+    if not is_multivariate :
+        # Get the cluster training sliding windows
+        cluster_train_wins = sliding_win(cluster_series, window_size = win_size_cluster)
+        # Get the trees training windows
+        win_cluster, win_pred, target =  sliding_win_cluster_aware(
+                                                            series = trees_train_series,
+                                                            window_size_cluster = win_size_cluster, 
+                                                            window_size_pred = win_size_tree, 
+                                                            win_out_pred = 1                    
+                                                            )
+    else:
+        # Multivariate sliding wins
+        cluster_train_wins = sliding_windows_multivariate(cluster_series, win_size_cluster)
+        win_cluster, win_pred, target = sliding_win_cluster_aware_multivariate(trees_train_series, target_column, win_size_cluster, win_size_tree, 1)
+    
     # Train the cluster.
     cluster = TE_TFI.supported_clusters[cluster_type](**cluster_cfg, n_clusters = num_clusters, random_state = 42)
     cluster.fit(cluster_train_wins)

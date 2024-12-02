@@ -23,12 +23,29 @@ if __name__ == "__main__":
     parser.add_argument('--win_tree_perc', type=float, required=False, default=1.0)
     parser.add_argument('--n_jobs', type=int, required=False, default=os.cpu_count())
     parser.add_argument('--out_path', type=str, required=False, default="./")
+    parser.add_argument('--is_multivariate', type=str, required=False, default=False)
+    parser.add_argument('--do_preprocess', type=str, required=False, default=False)
+    parser.add_argument('--target_column', type=str, required=False, default=False)
 
+    
     args = parser.parse_args()
-    series = np.loadtxt(args.series_path, dtype=float)
-
-    file = args.series_path.split("/")[-1]
-    series_name = file[:3]
+    #assert not (args.is_multivariate != None and args.target_column == None)
+    if not args.is_multivariate:
+        series = np.loadtxt(args.series_path, dtype=float)
+        file = args.series_path.split("/")[-1]
+        series_name = file[:3]
+    else:
+        series_df = pd.read_csv(args.series_path)
+        # Remove useless series
+        if "date" in series_df.columns:
+            series_df.drop(columns = ["date"], inplace = True)
+        if "DateTime" in series_df.columns:
+            series_df.drop(columns = ["DateTime"], inplace = True)
+        scaler = MinMaxScaler()
+        # Convert the series. 
+        series = pd.DataFrame(scaler.fit_transform(series_df), columns=series_df.columns)
+        file = args.series_path.split("/")[-1]
+        series_name = file[:-4]
     stag_csv = pd.read_csv(args.path_stagionality)
 
     has_seasonality = stag_csv.loc[stag_csv['file'] == file, 'has_seasonality'].values[0]
@@ -37,6 +54,13 @@ if __name__ == "__main__":
         win_clust = int(biggest_lag * args.lag_percentage)
     else:
         win_clust = args.win_clust
+
+    if is_multivariate:
+        if args.target_column is None:
+            target_column = stag_csv.loc[stag_csv['file'] == file, 'feature'].values[0]
+        else:
+            target_column = args.target_column
+
     win_tree = int(win_clust*args.win_tree_perc)
     
     param_grid = {
@@ -50,7 +74,6 @@ if __name__ == "__main__":
     trees_cfg, trees_best_mse, trees_best_mape, trees_best_mae, sil_score = hyp_trees(
                                 cluster_type = "KMeans",
                                 cluster_cfg = { "max_iter" : 500, "verbose": True},
-                                
                                 num_clusters = args.num_cluster,
                                 tree_params = param_grid,
                                 time_series = series,
@@ -60,7 +83,9 @@ if __name__ == "__main__":
                                 n_jobs = args.n_jobs,
                                 disable_tqdm = False,
                                 win_size_cluster = win_clust,
-                                win_size_tree = win_tree
+                                win_size_tree = win_tree,
+                                is_multivariate = args.is_multivariate,
+                                target_column = target_column
                             )
     te_tfi = TE_TFI(cluster_type="KMeans", n_clusters = args.num_cluster, cluster_cfg = { "max_iter" : 500, "verbose": True}, tree_confs=trees_cfg, n_jobs=args.n_jobs)
     train_size = int(0.7 * len(series))
@@ -97,7 +122,10 @@ if __name__ == "__main__":
         "Seasonal" : has_seasonality,
         "Win_Clust" : win_clust,
         "Win_Tree" : win_tree,
-        "Perc"      :args.lag_percentage
+        "Perc"      :args.lag_percentage,
+        "Trees MSE Hyp" : trees_best_mse,
+        "Trees MAPE Hyp": trees_best_mape,
+        "Trees MAE Hyp" : trees_best_mae
     }
     csv_df = pd.DataFrame(dict_out, index = [0])
     csv_out_stats = os.path.join(args.out_path, "stats_hyp.csv")

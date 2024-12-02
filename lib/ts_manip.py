@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def sliding_win(series, window_size):
     subsequences = []
@@ -182,7 +183,46 @@ def partition_series_multivariate(series, elements_per_partition):
     # Split the series into partitions
     return [series.iloc[i * elements_per_partition:(i + 1) * elements_per_partition].values.reshape(-1) 
             for i in range(num_partitions)]
+
+def sliding_windows_multivariate(df_series, window_size):
+    rows = df_series.to_numpy()
+    subsequences = []
+    for i in range(len(rows) - window_size + 1):
+        sub = rows[i:i + window_size].reshape(-1)
+        subsequences.append(sub)
+    return np.array(subsequences)
+
+def sliding_win_cluster_aware_multivariate(df_series, target_column, window_size_cluster, window_size_pred, win_out_pred):
+    assert window_size_cluster >= window_size_pred
+    X_cluster, X_pred, y = [], [], []
+    rows = df_series.to_numpy()
+    target_values = df_series[target_column].to_numpy().reshape(-1)
+    for i in range(len(rows) - window_size_cluster - win_out_pred + 1):
+        cluster = rows[i:i + window_size_cluster]      
+        pred_window = cluster[-window_size_pred:]
+        target = target_values[i + window_size_cluster:i + window_size_cluster + win_out_pred]
+        X_cluster.append(cluster.reshape(-1))
+        X_pred.append(pred_window.reshape(-1))
+        y.append(target)
+    return np.array(X_cluster), np.array(X_pred), np.array(y)
+
 if __name__ == "__main__":
+    # Sample data
+    data = {
+        'feature1': [1, 2, 3, 4, 5, 6, 7, 8],
+        'feature2': [2, 3, 4, 5, 6, 7, 8, 9],
+        'target': [10, 20, 30, 40, 50, 60, 70, 80]
+    }
+    df_series = pd.DataFrame(data)
+    print(df_series)
+    print(sliding_windows_multivariate(df_series,3))
+    print("Cluster aware partitioning")
+    win_clust, win_tree, pred = sliding_win_cluster_aware_multivariate(df_series,"target", 3, 3, 1)
+    print("Clusters")
+    print(win_clust)
+    print("Targets")
+    print(pred)
+    # exit(1)
     seq = np.array([i for i in range(1,20)])
     offset = 1
     series_offst = sliding_win_target_offset(seq, 4, 1, offset)

@@ -129,4 +129,5 @@ class TE_TFI:
         return internal_params + tree_confs + tree_setted_confs
     
     def __del__(self):
-        self.pool.close()
+        if self.pool is not None:
+            self.pool.close()
