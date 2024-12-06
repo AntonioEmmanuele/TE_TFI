@@ -112,6 +112,7 @@ def hyp_trees(  cluster_type,           # Type of the cluster
     labels = cluster.predict(win_cluster)
     # Evaluate the sil score
     sil_score = silhouette_score(win_cluster, labels=labels)
+    print(f"Completed clustering during hyp \n")
     # Identify the labels for each sample
     trees_X = [ win_pred[labels == j] for j in range(0, num_clusters)] 
     trees_y = [ target[labels == j] for j in range(0, num_clusters)]
@@ -155,6 +156,35 @@ def hyp_trees(  cluster_type,           # Type of the cluster
     pool.close()
     pool.join()
     return cfg_per_tree, min_mse_per_tree, min_mape_per_tree, min_mae_per_tree, sil_score
+
+""" ATTENTION ! 
+    Win Cluster == Win Tree !!!!!!!
+    Otherwise this function doesn't work..
+"""
+def validate_te_tfi(tree_cfg, n_jobs, num_cluster, x_labels, y_labels, cv_order, starting_percentage):
+    starting_rolling = int(starting_percentage * len(x_labels))
+    rolling_offset   = int((len(x_labels) - starting_rolling) / cv_order)
+    mse_per_conf = []
+    mape_per_conf = []
+    mae_per_conf = []
+    silhouett = []
+    for i in range(cv_order):
+        # Split samples based on the rolling window approach, remember that these samples
+        # are the win_trees which are the outputs of the cluster.
+        train_x = x_labels[ : starting_rolling + i*rolling_offset]
+        train_y = y_labels[ : starting_rolling + i*rolling_offset]
+        val_x   = x_labels[starting_rolling + i*rolling_offset : starting_rolling + (i + 1)*rolling_offset]
+        val_y   = y_labels[starting_rolling + i*rolling_offset : starting_rolling + (i + 1)*rolling_offset]
+        #model = DecisionTreeRegressor(**conf, random_state = 42)
+        te_tfi = TE_TFI(cluster_type="KMeans", n_clusters = num_cluster, cluster_cfg = { "max_iter" : 500, "verbose": True}, tree_confs=tree_cfg, n_jobs=n_jobs)
+        te_tfi.fit_clust_ts(train_x, train_x, train_y, False)
+        outcomes, sil_fin = te_tfi.predict_clust_ts(val_x, val_x)
+        mse_per_conf.append(mean_squared_error(y_true = val_y, y_pred = outcomes))
+        mae_per_conf.append(mean_absolute_error(y_true = val_y, y_pred = outcomes))
+        mape_per_conf.append(mean_absolute_percentage_error(y_true = val_y, y_pred = outcomes))
+        silhouett.append(sil_fin)
+    # Return the last model... + some info.
+    return np.mean(mse_per_conf), np.mean(mape_per_conf), np.mean(mae_per_conf), np.mean(sil_fin), te_tfi
 
 
 # Funzione che effettua la cross-validazione di una configurazione di cluster 

@@ -1,16 +1,10 @@
 #!/bin/bash
-clusters=(2 3 4 5 6 7 8 9 10)
-percentages=( 0.5 1.0 2.0 3.0)
 win_clust=50
-out_dir="hyp_test_ucr_def"
+out_dir="hyp_test_ucr_new"
 for file in ./datasets/processed/*; do
-    for n_clust in "${clusters[@]}"; do
-        for perc_clust  in "${percentages[@]}"; do
-            python3 ./hyp_cluster.py --path_stagionality "./tst/ucr_seasonality_results_0.6.csv" --num_cluster $n_clust --win_clust $win_clust --series_path $file  --lag_percentage $perc_clust --out_path $out_dir
-            # git add *
-            # git commit -m "adds Series: $file N_clust : $n_clust Perc : $perc_clust"
-            # git push
-    done
-  done
+    python3 ./hyp_cluster.py --cluster_min 2 --cluster_max 10 --path_stagionality "./tst/ucr_seasonality_results_0.6.csv" --win_clust $win_clust --series_path $file --out_path $out_dir
+    # git add *
+    # git commit -m "adds Series: $file N_clust : $n_clust Perc : $perc_clust"
+    # git push
 done
 
