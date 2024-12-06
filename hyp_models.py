@@ -96,11 +96,11 @@ def hyp_model(  model,
             ):
   
     list_params = generate_hyperparameter_grid(param_grid)
+    id_results = 0 # MSE MAPE or MAE for CV
     print(len(list_params))
     if use_many_core:
         params_per_cpu = list_partitioning(list_params, n_jobs)
         pool = Pool(n_jobs)
-        id_results = 0 # MSE MAPE or MAE for CV
         results = [[], [], []]
         # Compute execute the cross-validation with pool and select the best series.            
         args = [[cpu_param, model, t_X, t_y, cv_order, tree_cv_perc_start] for cpu_param in params_per_cpu]
