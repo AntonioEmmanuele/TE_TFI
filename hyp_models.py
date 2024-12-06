@@ -201,6 +201,10 @@ if __name__ == "__main__":
         "Seasonal" : has_seasonality,
         "Win" : win_size,
     }
+    csv_df = pd.DataFrame(dict_out, index = [0])
+    csv_out_stats = os.path.join(args.out_path, "stats_hyp.csv")
+    add_header = not os.path.exists(csv_out_stats)
+    csv_df.to_csv(csv_out_stats, sep = ",", header=add_header, index=False, mode = "a")
     out_hyp_dir =  os.path.join(args.out_path, f"hy_models")    
     if not os.path.exists(out_hyp_dir):
         os.makedirs(out_hyp_dir)
