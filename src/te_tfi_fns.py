@@ -53,8 +53,8 @@ def validate_series(configurations, x_labels, y_labels, cv_order, starting_perce
             model.fit(train_x, train_y)
             outcomes = model.predict(val_x)
             mse_per_conf.append(mean_squared_error(y_true = val_y, y_pred = outcomes))
-            mae_per_conf.append(mean_absolute_percentage_error(y_true = val_y, y_pred = outcomes))
-            mape_per_conf.append(mean_absolute_error(y_true = val_y, y_pred = outcomes))
+            mae_per_conf.append(mean_absolute_error(y_true = val_y, y_pred = outcomes))
+            mape_per_conf.append(mean_absolute_percentage_error(y_true = val_y, y_pred = outcomes))
         mse.append(np.mean(mse_per_conf))
         mape.append(np.mean(mape_per_conf))
         mae.append(np.mean(mae_per_conf))
@@ -134,15 +134,23 @@ def hyp_trees(  cluster_type,           # Type of the cluster
         args = [[cpu_param, t_X, t_y, cv_order, tree_cv_perc_start] for cpu_param in params_per_cpu]
         #mse, mape, mae = pool.starmap(validate_series, args)
         results = pool.starmap(validate_series, args)
-        results[0] = np.concatenate(results[0])
-        results[1] = np.concatenate(results[1])
-        results[2] = np.concatenate(results[2])
-        best_result_idx = np.argmin(results[id_results])
+        # results[0] = np.concatenate(results[0])
+        # results[1] = np.concatenate(results[1])
+        # results[2] = np.concatenate(results[2])
+        mse_results = []
+        mape_results = []
+        mae_results = []
+        for res in results:
+            mse_results.extend(res[0])
+            mape_results.extend(res[1])
+            mae_results.extend(res[2])
+        br = [mse_results, mape_results, mae_results]
+        best_result_idx = np.argmin(br[id_results])
         # Append to the results.
         cfg_per_tree.append(list_params[best_result_idx])
-        min_mse_per_tree.append(results[0][best_result_idx])
-        min_mape_per_tree.append(results[1][best_result_idx])
-        min_mae_per_tree.append(results[2][best_result_idx])
+        min_mse_per_tree.append(br[0][best_result_idx])
+        min_mape_per_tree.append(br[1][best_result_idx])
+        min_mae_per_tree.append(br[2][best_result_idx])
 
     pool.close()
     pool.join()

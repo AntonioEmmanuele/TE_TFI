@@ -65,6 +65,8 @@ if __name__ == "__main__":
             target_column = stag_csv.loc[stag_csv['file'] == file, 'feature'].values[0]
         else:
             target_column = args.target_column
+    else:
+        target_column = None
 
     win_tree = int(win_clust*args.win_tree_perc)
     
@@ -93,7 +95,6 @@ if __name__ == "__main__":
                                 target_column = target_column
                             )
     print(f"Trees complete initializing vecotrs")
-    # trees_cfg = [{"max_depth" : 4} ]* args.num_cluster
     te_tfi = TE_TFI(cluster_type="KMeans", n_clusters = args.num_cluster, cluster_cfg = { "max_iter" : 500, "verbose": True}, tree_confs=trees_cfg, n_jobs=args.n_jobs)
     train_size = int(0.7 * len_series)
     if not args.is_multivariate:
