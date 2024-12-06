@@ -16,6 +16,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from multiprocessing import Pool
 from tqdm import tqdm
+import time 
 
 def validate_series_general(configurations, model, x_labels, y_labels, cv_order, starting_percentage):
     starting_rolling = int(starting_percentage * len(x_labels))
@@ -90,27 +91,30 @@ def hyp_model(  model,
                 n_jobs = os.cpu_count(),    
                 disable_tqdm = False,       
                 is_multivariate = False,
-                target_column = None
+                target_column = None,
+                use_many_core = True
             ):
-
+  
     list_params = generate_hyperparameter_grid(param_grid)
     print(len(list_params))
-    params_per_cpu = list_partitioning(list_params, n_jobs)
-    pool = Pool(n_jobs)
-    id_results = 0 # MSE MAPE or MAE for CV
-    results = [[], [], []]
-    # Compute execute the cross-validation with pool and select the best series.            
-    args = [[cpu_param, model, t_X, t_y, cv_order, tree_cv_perc_start] for cpu_param in params_per_cpu]
-    #mse, mape, mae = pool.starmap(validate_series, args)
-    results = pool.starmap(validate_series_general, args)
-    mse_results = []
-    mape_results = []
-    mae_results = []
-    for res in results:
-        mse_results.extend(res[0])
-        mape_results.extend(res[1])
-        mae_results.extend(res[2])
-
+    if use_many_core:
+        params_per_cpu = list_partitioning(list_params, n_jobs)
+        pool = Pool(n_jobs)
+        id_results = 0 # MSE MAPE or MAE for CV
+        results = [[], [], []]
+        # Compute execute the cross-validation with pool and select the best series.            
+        args = [[cpu_param, model, t_X, t_y, cv_order, tree_cv_perc_start] for cpu_param in params_per_cpu]
+        #mse, mape, mae = pool.starmap(validate_series, args)
+        results = pool.starmap(validate_series_general, args)
+        mse_results = []
+        mape_results = []
+        mae_results = []
+        for res in results:
+            mse_results.extend(res[0])
+            mape_results.extend(res[1])
+            mae_results.extend(res[2])
+    else:
+        mse_results, mape_results, mae_results = validate_series_general(list_params, model,  t_X, t_y, cv_order, tree_cv_perc_start)
     br = [mse_results, mape_results, mae_results]
     best_result_idx = np.argmin(br[id_results])
     pool.close()
@@ -180,9 +184,12 @@ if __name__ == "__main__":
     # Params
     train_size = int(0.7 * len(series))
     train_series = series[0 : train_size]
-    t_X, t_y = sliding_win_target(series, win_size, 1)
+    t_X, t_y = sliding_win_target(train_series, win_size, 1)
     print("Launching Hyp")
-    best_cfg, best_mse, best_mape, best_mae =  hyp_model(model, param_grid, t_X, t_y, 5, 0.5, args.n_jobs, False, False, None)
+    #best_cfg, best_mse, best_mape, best_mae =  hyp_model(model, param_grid, t_X, t_y.ravel(), 5, 0.5, args.n_jobs, False, False, None)
+    start_time  = time.time()
+    best_cfg, best_mse, best_mape, best_mae =  hyp_model(model, param_grid, t_X, t_y.ravel(), 5, 0.5, args.n_jobs , False, False, None, (args.model == "RT"))
+    end_time = time.time() - start_time
     print(f"CFG : {best_cfg} MSE : {best_mse} MAPE: {best_mape} MAE: {best_mae}")
     print(best_cfg)
     print(best_mse)
@@ -190,7 +197,7 @@ if __name__ == "__main__":
     # Validate the final accuracy
     t_X, t_y = sliding_win_target(series, win_size, 1)
     # Obtain results
-    definitive_mse, definitive_mape, definitive_mae =  validate_series_general([best_cfg], model, t_X, t_y, cv_order = 5, starting_percentage=0.5)
+    definitive_mse, definitive_mape, definitive_mae =  validate_series_general([best_cfg], model, t_X, t_y.ravel(), cv_order = 5, starting_percentage=0.5)
     print(f"Final Model: Best-CFG MSE : {definitive_mse} MAPE: {definitive_mape} MAE: {definitive_mae}")
     out_dir_model = os.path.join(args.out_path, f"models")
     if not os.path.exists(out_dir_model):
@@ -208,6 +215,7 @@ if __name__ == "__main__":
         "Final MAE": definitive_mae,
         "Seasonal" : has_seasonality,
         "Win" : win_size,
+        "TimeHyp":end_time
     }
     csv_df = pd.DataFrame(dict_out, index = [0])
     csv_out_stats = os.path.join(args.out_path, "stats_hyp.csv")
