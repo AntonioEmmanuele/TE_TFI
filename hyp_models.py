@@ -145,6 +145,14 @@ if __name__ == "__main__":
             'min_samples_leaf': [1, 5, 10, 20, 50],   # Min samples at a leaf node
             'max_features': [ 1.0, 'sqrt', 'log2']    # Max features considered for splitting
         }
+    elif args.model == "RF":
+        model = RandomForestRegressor(n_jobs = args.n_jobs, n_estimators = 100)
+        param_grid = {
+            'max_depth': [5, 7, 10, 15, 20],      
+            'min_samples_split': [2, 5, 10, 20, 50],  # Min samples to split a node
+            'min_samples_leaf': [1, 5, 10, 20, 50],   # Min samples at a leaf node
+            'max_features': [ 1.0, 'sqrt', 'log2']    # Max features considered for splitting
+        }
     else:
         print("Model not supported !")
         exit(1)
