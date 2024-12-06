@@ -113,12 +113,12 @@ def hyp_model(  model,
             mse_results.extend(res[0])
             mape_results.extend(res[1])
             mae_results.extend(res[2])
+        pool.close()
+        pool.join()
     else:
         mse_results, mape_results, mae_results = validate_series_general(list_params, model,  t_X, t_y, cv_order, tree_cv_perc_start)
     br = [mse_results, mape_results, mae_results]
     best_result_idx = np.argmin(br[id_results])
-    pool.close()
-    pool.join()
     return list_params[best_result_idx], br[0][best_result_idx], br[1][best_result_idx], br[2][best_result_idx]
 
 
