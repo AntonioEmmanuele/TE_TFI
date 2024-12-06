@@ -75,7 +75,6 @@ class TE_TFI:
         to_ret = np.zeros(len(wins_tree))
         # Classify each sample
         ids_tree = self.cluster.predict(hyst_buff_cl)
-        
         # Divide samples per each tree
         args = [[self.trees[i], wins_tree[ids_tree == i]] for i in range(0, self.n_clusters)]
         # Divide the ids for sorting.

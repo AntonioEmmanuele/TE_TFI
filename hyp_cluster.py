@@ -36,16 +36,19 @@ if __name__ == "__main__":
         series = np.loadtxt(args.series_path, dtype=float)
         file = args.series_path.split("/")[-1]
         series_name = file[:3]
+        len_series = len(series)
     else:
+        print(f"Multivariate time series")
         series_df = pd.read_csv(args.series_path)
         # Remove useless series
         if "date" in series_df.columns:
             series_df.drop(columns = ["date"], inplace = True)
         if "DateTime" in series_df.columns:
             series_df.drop(columns = ["DateTime"], inplace = True)
-        scaler = MinMaxScaler()
+        scaler = MinMaxScaler(feature_range=(0, 1))
         # Convert the series. 
         series = pd.DataFrame(scaler.fit_transform(series_df), columns=series_df.columns)
+        len_series = series.shape[0]
         file = args.series_path.split("/")[-1]
         series_name = file[:-4]
     stag_csv = pd.read_csv(args.path_stagionality)
@@ -72,7 +75,7 @@ if __name__ == "__main__":
         'max_features': [ 1.0, 'sqrt', 'log2']    # Max features considered for splitting
     }
 
-
+    print(f"Running hyp")
     trees_cfg, trees_best_mse, trees_best_mape, trees_best_mae, sil_score = hyp_trees(
                                 cluster_type = "KMeans",
                                 cluster_cfg = { "max_iter" : 500, "verbose": True},
@@ -89,9 +92,12 @@ if __name__ == "__main__":
                                 is_multivariate = args.is_multivariate,
                                 target_column = target_column
                             )
+    print(f"Trees complete initializing vecotrs")
+    # trees_cfg = [{"max_depth" : 4} ]* args.num_cluster
     te_tfi = TE_TFI(cluster_type="KMeans", n_clusters = args.num_cluster, cluster_cfg = { "max_iter" : 500, "verbose": True}, tree_confs=trees_cfg, n_jobs=args.n_jobs)
-    train_size = int(0.7 * len(series))
+    train_size = int(0.7 * len_series)
     if not args.is_multivariate:
+        print("In the wront place")
         train_series = series[: train_size]
         test_series = series[train_size : ]
         train_wins_cluster, train_wins_tree, train_target_tree = sliding_win_cluster_aware(series = train_series, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
@@ -99,10 +105,14 @@ if __name__ == "__main__":
     else:
         train_series = series.iloc[: train_size]
         test_series = series.iloc[train_size : ]
+        print(f"Train size {train_size} Series Len {len_series}")
         train_wins_cluster, train_wins_tree, train_target_tree = sliding_win_cluster_aware_multivariate(df_series = train_series, target_column = target_column, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
         test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware_multivariate(df_series = test_series, target_column = target_column, window_size_cluster = win_clust, window_size_pred = win_tree, win_out_pred = 1)
+
+
     te_tfi.fit_clust_ts(train_wins_cluster, train_wins_tree, train_target_tree, False)
     preds, sil_fin = te_tfi.predict_clust_ts(test_wins_cluster, test_wins_tree)
+    print("Completed TE TFI training")
     te_tfi_mse  = mean_squared_error(y_true = test_target_tree, y_pred = preds)
     te_tfi_mape = mean_absolute_percentage_error(y_true = test_target_tree, y_pred = preds)
     te_tfi_mae  = mean_absolute_error(y_true = test_target_tree, y_pred = preds)
@@ -131,9 +141,9 @@ if __name__ == "__main__":
         "Win_Clust" : win_clust,
         "Win_Tree" : win_tree,
         "Perc"      :args.lag_percentage,
-        "Trees MSE Hyp" : trees_best_mse,
-        "Trees MAPE Hyp": trees_best_mape,
-        "Trees MAE Hyp" : trees_best_mae
+        "Trees MSE Hyp" : str(trees_best_mse),
+        "Trees MAPE Hyp": str(trees_best_mape),
+        "Trees MAE Hyp" : str(trees_best_mae)
     }
     csv_df = pd.DataFrame(dict_out, index = [0])
     csv_out_stats = os.path.join(args.out_path, "stats_hyp.csv")
