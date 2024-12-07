@@ -15,7 +15,7 @@ done
 # Iterate over the range from start_index to end_index
 for ((i=offset; i<end_offset; i++)); do
   echo "Processing: ${files[i]}"
-  python3 ./hyp_models.py --model "RF" --path_stagionality "./tst/ucr_seasonality_results_0.6.csv" --win_size $win_clust --series_path $file  --lag_percentage 1.0 --out_path $out_dir
+  python3 ./hyp_models.py --model "RF" --path_stagionality "./tst/ucr_seasonality_results_0.6.csv" --win_size $win_clust --series_path ${files[i]}  --lag_percentage 1.0 --out_path $out_dir
   git add *
   git commit -m "adds Random Forest ${file}"
   git push
