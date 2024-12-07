@@ -2,7 +2,7 @@
 win_clust=50
 out_dir="hyp_randomforest_ucr_2"
 files=()
-offset=150 # Used for experiments error
+offset=179 # Used for experiments error
 end_offset=249 # Used for splitting experiments
 # Add each file in the directory to the array
 for file in ./datasets/processed/*; do 
