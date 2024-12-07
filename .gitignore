@@ -2,3 +2,5 @@ Dataset
 **/__pycache__/**
 __pycache__
 .venv
+hyp_randomforest_ucr/models/
+test.txt
