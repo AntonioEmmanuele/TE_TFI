@@ -166,7 +166,9 @@ if __name__ == "__main__":
             'learning_rate':    [0.025, 0.05, 0.1, 0.2],
             'gamma':            [0, 0.1, 0.2, 0.5],    
             'max_depth':        [2, 3, 5, 7, 10, 20, 30],                               
-            'subsample':        [0.5, 0.75, 1.0],              
+            'subsample':        [0.5, 0.75, 1.0],
+            'alpha':            [0, 0.1, 0.2],
+            'lambda':           [1, 2, 3],              
         }
     else:
         print("Model not supported !")
