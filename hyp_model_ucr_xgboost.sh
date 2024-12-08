@@ -1,9 +1,9 @@
 #!/bin/bash
 win_clust=50
-out_dir="hyp_xgboost_ucr"
+out_dir="hyp_xgboost_ucr_2"
 files=()
-offset=100 # Used for experiments error
-end_offset=250 # Used for splitting experiments
+offset=0 # Used for experiments error
+end_offset=100 # Used for splitting experiments
 # Add each file in the directory to the array
 for file in ./datasets/processed/*; do 
   # Check if it's a regular file
