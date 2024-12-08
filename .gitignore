@@ -8,3 +8,4 @@ hyp_xgboost_ucr/models/
 hyp_xgboost_ucr_2/models/
 test.txt
 log.txt
+models/
