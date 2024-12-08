@@ -7,7 +7,7 @@ import json5
 from tslearn.clustering import KShape,TimeSeriesKMeans
 from sklearn.metrics import silhouette_score, pairwise_distances
 
-def compute_intra_distances(X, cluster):
+def compute_intra_distances(X, cluster, labels):
     centroids = cluster.cluster_centers_
     # Compute intra-cluster distances
     intra_distances = []

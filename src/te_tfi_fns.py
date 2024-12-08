@@ -1,11 +1,11 @@
-from lib.ts_manip import sliding_win_cluster_aware, sliding_win, sliding_windows_multivariate, sliding_win_cluster_aware_multivariate
+from lib.ts_manip import sliding_win_cluster_aware, sliding_win, sliding_windows_multivariate, sliding_win_cluster_aware_multivariate, custom_mape
 from src.te_tfi_model import TE_TFI, compute_intra_distances
 import numpy as np
 from multiprocessing import Pool
 import os
 import itertools
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 import numpy as np
 import time 
 from sklearn.cluster import KMeans
@@ -53,7 +53,7 @@ def validate_series(configurations, x_labels, y_labels, cv_order, starting_perce
             outcomes = model.predict(val_x)
             mse_per_conf.append(mean_squared_error(y_true = val_y, y_pred = outcomes))
             mae_per_conf.append(mean_absolute_error(y_true = val_y, y_pred = outcomes))
-            mape_per_conf.append(mean_absolute_percentage_error(y_true = val_y, y_pred = outcomes))
+            mape_per_conf.append(custom_mape(y_true = val_y, y_pred = outcomes))
         mse.append(np.mean(mse_per_conf))
         mape.append(np.mean(mape_per_conf))
         mae.append(np.mean(mae_per_conf))
@@ -112,7 +112,7 @@ def hyp_trees(  cluster_type,           # Type of the cluster
     print(f"Computing cluster metrics")
     # Evaluate the sil score
     sil_score = silhouette_score(win_cluster, labels=labels)
-    intra_distances = compute_intra_distances(win_cluster, cluster)
+    intra_distances = compute_intra_distances(win_cluster, cluster, labels)
     inter_distances = pairwise_distances(cluster.cluster_centers_)
     print(f"Completed clustering during hyp \n")
     # Identify the labels for each sample
@@ -180,7 +180,7 @@ def validate_te_tfi(tree_cfg, n_jobs, num_cluster, x_labels, y_labels, cv_order,
         outcomes, sil_fin = te_tfi.predict_clust_ts(val_x, val_x)
         mse_per_conf.append(mean_squared_error(y_true = val_y, y_pred = outcomes))
         mae_per_conf.append(mean_absolute_error(y_true = val_y, y_pred = outcomes))
-        mape_per_conf.append(mean_absolute_percentage_error(y_true = val_y, y_pred = outcomes))
+        mape_per_conf.append(custom_mape(y_true = val_y, y_pred = outcomes))
         silhouett.append(sil_fin)
     # Return the last model... + some info.
     return np.mean(mse_per_conf), np.mean(mape_per_conf), np.mean(mae_per_conf), np.mean(sil_fin), te_tfi
@@ -281,7 +281,7 @@ if __name__ == "__main__":
     test_wins_cluster, test_wins_tree, test_target_tree = sliding_win_cluster_aware(series = test_series, window_size_cluster = window_size_cluster, window_size_pred = window_size_tree, win_out_pred = 1)
     model.fit_clust_ts(hyst_buffers_cl = train_wins_cluster, train_wins_tree = train_wins_tree, train_target_tree = train_target_tree)
     class_inferences = model.predict_clust_ts(hyst_buff_cl = test_wins_cluster, wins_tree = test_wins_tree)
-    mape_te = mean_absolute_percentage_error(y_true = test_target_tree, y_pred = class_inferences)
+    mape_te = custom_mape(y_true = test_target_tree, y_pred = class_inferences)
     mse_te = mean_squared_error(y_true = test_target_tree, y_pred = class_inferences)
     mae_te = mean_absolute_error(y_true = test_target_tree, y_pred = class_inferences)
 
@@ -292,7 +292,7 @@ if __name__ == "__main__":
     model.fit_clust_ts(hyst_buffers_cl = train_wins_cluster, train_wins_tree = train_wins_tree, train_target_tree = train_target_tree)
     class_inferences = model.predict_clust_ts(hyst_buff_cl = test_wins_cluster, wins_tree = test_wins_tree)
     
-    mape_te = mean_absolute_percentage_error(y_true = test_target_tree, y_pred = class_inferences)
+    mape_te = custom_mape(y_true = test_target_tree, y_pred = class_inferences)
     mse_te = mean_squared_error(y_true = test_target_tree, y_pred = class_inferences)
     mae_te = mean_absolute_error(y_true = test_target_tree, y_pred = class_inferences)
     print(f"TE TFI CLASS:  MSE: {mse_te} MAPE {mape_te} MAE {mae_te}")

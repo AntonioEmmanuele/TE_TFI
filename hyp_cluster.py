@@ -6,7 +6,7 @@ import os
 from tslearn.clustering import TimeSeriesKMeans
 from src.te_tfi_model import TE_TFI
 from lib.ts_manip import sliding_win_cluster_aware, sliding_win_cluster_aware_multivariate
-from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 #from lib.ucr_parser import get_series_name
 import joblib
 import json5
@@ -151,6 +151,8 @@ if __name__ == "__main__":
     parser.add_argument('--out_path', type=str, required=False, default="./")
     parser.add_argument('--is_multivariate', type=int, required=False, default=0)
     parser.add_argument('--target_column', type=str, required=False, default=None)
+    parser.add_argument('--preprocess', type=int, required=False, default = 1 )
+
     lag_percentages = [0.5, 1.0, 2.0, 3.0]
     args = parser.parse_args()
     # Output Directory
@@ -173,6 +175,15 @@ if __name__ == "__main__":
         file = args.series_path.split("/")[-1]
         series_name = file[:3]
         len_series = len(series)
+        if args.preprocess == 1:
+            # Reshape to 2D array
+            series = series.reshape(-1, 1)  # Shape becomes (n_samples, 1)
+            # Initialize the scaler
+            scaler = MinMaxScaler()
+            # Fit and transform
+            X_scaled = scaler.fit_transform(series)
+            # Flatten back to 1D if needed
+            series = X_scaled.flatten()
     else:
         print(f"Multivariate time series")
         series_df = pd.read_csv(args.series_path)
