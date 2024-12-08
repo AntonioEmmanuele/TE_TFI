@@ -206,6 +206,18 @@ def sliding_win_cluster_aware_multivariate(df_series, target_column, window_size
         y.append(target)
     return np.array(X_cluster), np.array(X_pred), np.array(y)
 
+
+def custom_mape(actual, forecast):
+    act_resh = np.array(actual).reshape(-1)
+    for_resh = np.array(forecast).reshape(-1)
+    sum = 0
+    for act, forec in zip(act_resh, for_resh):
+        if act > 0.0:
+            sum += abs((act - forec) / act)
+        else:
+           sum += abs((act - forec))
+    return sum / len(act_resh) * 100
+
 if __name__ == "__main__":
     # Sample data
     data = {

@@ -5,9 +5,9 @@ from src.te_tfi_fns import list_partitioning, generate_hyperparameter_grid
 import os
 from tslearn.clustering import TimeSeriesKMeans
 from src.te_tfi_model import TE_TFI
-from lib.ts_manip import sliding_win_target
+from lib.ts_manip import sliding_win_target, custom_mape
 #sliding_win_cluster_aware, sliding_win_cluster_aware_multivariate
-from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 #from lib.ucr_parser import get_series_name
 import joblib
 import json5
@@ -18,6 +18,7 @@ from multiprocessing import Pool
 from tqdm import tqdm
 import time 
 from xgboost import XGBRegressor
+from sklearn.preprocessing import MinMaxScaler
 
 def validate_series_general(configurations, model, x_labels, y_labels, cv_order, starting_percentage):
     starting_rolling = int(starting_percentage * len(x_labels))
@@ -44,7 +45,7 @@ def validate_series_general(configurations, model, x_labels, y_labels, cv_order,
             outcomes = model.predict(val_x)
             mse_per_conf.append(mean_squared_error(y_true = val_y, y_pred = outcomes))
             mae_per_conf.append(mean_absolute_error(y_true = val_y, y_pred = outcomes))
-            mape_per_conf.append(mean_absolute_percentage_error(y_true = val_y, y_pred = outcomes))
+            mape_per_conf.append(custom_mape(y_true = val_y, y_pred = outcomes))
         #print(f"Params {mse_per_conf} {mae_per_conf} {mape_per_conf}" )
         mse.append(np.mean(mse_per_conf))
         mape.append(np.mean(mape_per_conf))
@@ -139,7 +140,7 @@ if __name__ == "__main__":
     parser.add_argument('--out_path', type=str, required=False, default="./")
     parser.add_argument('--is_multivariate', type=int, required=False, default=0)
     parser.add_argument('--target_column', type=str, required=False, default=None)
-    parser.add_argument('--preprocess', type=int, required=False, default=1 )
+    parser.add_argument('--preprocess', type=int, required=False, default = 1 )
 
     args = parser.parse_args()
     
@@ -178,7 +179,16 @@ if __name__ == "__main__":
     file = args.series_path.split("/")[-1]
     series_name = file[:3]
     len_series = len(series)
-    
+    if args.preprocess == 1:
+        # Reshape to 2D array
+        series = series.reshape(-1, 1)  # Shape becomes (n_samples, 1)
+        # Initialize the scaler
+        scaler = MinMaxScaler()
+        # Fit and transform
+        X_scaled = scaler.fit_transform(series)
+        # Flatten back to 1D if needed
+        series = X_scaled.flatten()
+        
     # Manage seasonality.
     if args.path_stagionality is not None:
         stag_csv = pd.read_csv(args.path_stagionality)

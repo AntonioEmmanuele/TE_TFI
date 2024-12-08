@@ -1,6 +1,6 @@
 #!/bin/bash
 win_clust=50
-out_dir="hyp_xgboost_ucr_2"
+out_dir="experiments/ucr_preprocess/xgboost/"
 files=()
 offset=0 # Used for experiments error
 end_offset=250 # Used for splitting experiments
@@ -20,13 +20,3 @@ for ((i=offset; i<end_offset; i++)); do
 	git commit -m "adds XGBoost ${files[i]}"
 	git push
 done
-# for file in "${files[@]:$offset:}"; do
-#   echo "Processing: $file"
-# done
-# for file in ./datasets/processed/*; do
-#     python3 ./hyp_models.py --model "RF" --path_stagionality "./tst/ucr_seasonality_results_0.6.csv" --win_size $win_clust --series_path $file  --lag_percentage 1.0 --out_path $out_dir
-#     # git add *
-#     # git commit -m "adds Random Forest ${file}"
-#     # git push
-# done
-
