@@ -3,4 +3,6 @@ Dataset
 __pycache__
 .venv
 hyp_randomforest_ucr/models/
+hyp_randomforest_ucr_2/models/
+hyp_xgboost_ucr_2/models/
 test.txt

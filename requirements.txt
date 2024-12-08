@@ -6,3 +6,4 @@ pandas
 joblib
 json5
 h5py
+xgboost

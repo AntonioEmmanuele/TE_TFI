@@ -17,6 +17,7 @@ from sklearn.tree import DecisionTreeRegressor
 from multiprocessing import Pool
 from tqdm import tqdm
 import time 
+from xgboost import XGBRegressor
 
 def validate_series_general(configurations, model, x_labels, y_labels, cv_order, starting_percentage):
     starting_rolling = int(starting_percentage * len(x_labels))
@@ -156,6 +157,14 @@ if __name__ == "__main__":
             'min_samples_split': [2, 5, 10, 20],  # Min samples to split a node
             'min_samples_leaf': [1, 5, 10, 20],   # Min samples at a leaf node
             'max_features': [ 1.0, 'sqrt', 'log2']    # Max features considered for splitting
+        }
+    elif args.model == "XGB":
+        model = XGBRegressor(n_jobs = args.n_jobs, n_estimators = 100)
+        param_grid = {                
+            'learning_rate':    [0.025, 0.05, 0.1, 0.2],
+            'gamma':            [ 0, 0.1, 0.2, 0.5],    
+            'max_depth':        [2, 3, 5, 7, 10],                               
+            'subsample':        [0.5, 0.75, 1.0],              
         }
     else:
         print("Model not supported !")
