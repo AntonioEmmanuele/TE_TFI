@@ -34,7 +34,7 @@ def do_dark_magic(
     }
 
     print(f"Running hyp")
-    trees_cfg, trees_best_mse, trees_best_mape, trees_best_mae, sil_score = hyp_trees(
+    trees_cfg, trees_best_mse, trees_best_mape, trees_best_mae, sil_score, intra_dist, inter_dist = hyp_trees(
                                 cluster_type = "KMeans",
                                 cluster_cfg = { "max_iter" : 500, "verbose": True},
                                 num_clusters = num_cluster,
@@ -116,7 +116,9 @@ def do_dark_magic(
         "Perc"      :lag_percentage,
         "Trees MSE Hyp" : str(trees_best_mse),
         "Trees MAPE Hyp": str(trees_best_mape),
-        "Trees MAE Hyp" : str(trees_best_mae)
+        "Trees MAE Hyp" : str(trees_best_mae),
+        "HypIntra" :    str(intra_dist),
+        "HypInter" :    str(inter_dist)
     }
     csv_df = pd.DataFrame(dict_out, index = [0])
     csv_out_stats = os.path.join(out_path, "stats_hyp.csv")

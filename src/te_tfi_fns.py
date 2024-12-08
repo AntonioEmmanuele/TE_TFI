@@ -1,5 +1,5 @@
 from lib.ts_manip import sliding_win_cluster_aware, sliding_win, sliding_windows_multivariate, sliding_win_cluster_aware_multivariate
-from src.te_tfi_model import TE_TFI
+from src.te_tfi_model import TE_TFI, compute_intra_distances
 import numpy as np
 from multiprocessing import Pool
 import os
@@ -109,8 +109,11 @@ def hyp_trees(  cluster_type,           # Type of the cluster
     cluster.fit(cluster_train_wins)
     # Get the labels for trees samples and their respective values.
     labels = cluster.predict(win_cluster)
+    print(f"Computing cluster metrics")
     # Evaluate the sil score
     sil_score = silhouette_score(win_cluster, labels=labels)
+    intra_distances = compute_intra_distances(win_cluster, cluster)
+    inter_distances = pairwise_distances(cluster.cluster_centers_)
     print(f"Completed clustering during hyp \n")
     # Identify the labels for each sample
     trees_X = [ win_pred[labels == j] for j in range(0, num_clusters)] 
@@ -134,9 +137,6 @@ def hyp_trees(  cluster_type,           # Type of the cluster
         args = [[cpu_param, t_X, t_y, cv_order, tree_cv_perc_start] for cpu_param in params_per_cpu]
         #mse, mape, mae = pool.starmap(validate_series, args)
         results = pool.starmap(validate_series, args)
-        # results[0] = np.concatenate(results[0])
-        # results[1] = np.concatenate(results[1])
-        # results[2] = np.concatenate(results[2])
         mse_results = []
         mape_results = []
         mae_results = []
@@ -154,7 +154,7 @@ def hyp_trees(  cluster_type,           # Type of the cluster
 
     pool.close()
     pool.join()
-    return cfg_per_tree, min_mse_per_tree, min_mape_per_tree, min_mae_per_tree, sil_score
+    return cfg_per_tree, min_mse_per_tree, min_mape_per_tree, min_mae_per_tree, sil_score, intra_distances, inter_distances
 
 """ ATTENTION ! 
     Win Cluster == Win Tree !!!!!!!

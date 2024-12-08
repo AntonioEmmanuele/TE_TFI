@@ -5,7 +5,17 @@ import numpy as np
 #from sklearn.model_selection import GridSearchCV
 import json5
 from tslearn.clustering import KShape,TimeSeriesKMeans
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, pairwise_distances
+
+def compute_intra_distances(X, cluster):
+    centroids = cluster.cluster_centers_
+    # Compute intra-cluster distances
+    intra_distances = []
+    for k in range(len(centroids)):
+        cluster_points = X[labels == k]
+        centroid = centroids[k]
+        distances = np.linalg.norm(cluster_points - centroid, axis=1)  # Euclidean distance
+        intra_distances.append(np.mean(distances))
 
 def train_tree(dtr : DecisionTreeRegressor, X_train : np.ndarray, y_train : np.ndarray):
     dtr.fit(X_train, y_train)
@@ -86,6 +96,8 @@ class TE_TFI:
         for single_tree_preds, indexes in zip(preds_per_tree, final_vector_indexes):
             to_ret[indexes] = single_tree_preds
         sil = silhouette_score(hyst_buff_cl, ids_tree)
+        # intra_distance = compute_intra_distances(hyst_buff_cl, self.cluster)
+        # inter_distances = pairwise_distances(cluster.cluster_centers_)
         return to_ret, sil
     
     # def hyp_clusters(tree_params, cv_order: int = 1, disable_tqdm : bool = False, verb_gs : int = 1, json_out : str = None, refit : bool = True):
