@@ -10,8 +10,7 @@ import numpy as np
 import time 
 from sklearn.cluster import KMeans
 from tslearn.clustering import TimeSeriesKMeans
-from sklearn.metrics import silhouette_score
-
+from sklearn.metrics import silhouette_score, pairwise_distances
 from tqdm import tqdm
 
 def list_partitioning(a_list, num_of_partitions):
