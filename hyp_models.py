@@ -139,6 +139,7 @@ if __name__ == "__main__":
     parser.add_argument('--out_path', type=str, required=False, default="./")
     parser.add_argument('--is_multivariate', type=int, required=False, default=0)
     parser.add_argument('--target_column', type=str, required=False, default=None)
+    parser.add_argument('--preprocess', type=int, required=False, default=1 )
 
     args = parser.parse_args()
     
@@ -159,11 +160,11 @@ if __name__ == "__main__":
             'max_features': [ 1.0, 'sqrt', 'log2']    # Max features considered for splitting
         }
     elif args.model == "XGB":
-        model = XGBRegressor(n_jobs = args.n_jobs, n_estimators = 100)
+        model = XGBRegressor(n_jobs = args.n_jobs, n_estimators = 100, objective = 'reg:squarederror', random_state = 42)
         param_grid = {                
             'learning_rate':    [0.025, 0.05, 0.1, 0.2],
-            'gamma':            [ 0, 0.1, 0.2, 0.5],    
-            'max_depth':        [2, 3, 5, 7, 10],                               
+            'gamma':            [0, 0.1, 0.2, 0.5],    
+            'max_depth':        [2, 3, 5, 7, 10, 20, 30],                               
             'subsample':        [0.5, 0.75, 1.0],              
         }
     else:
