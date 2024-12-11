@@ -1,0 +1,3 @@
+scikit-posthocs
+pandas
+numpy

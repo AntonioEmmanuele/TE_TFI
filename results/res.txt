@@ -1,0 +1,20 @@
+Friedman Test Results:
+Statistic: 381.92542372881326, p-value: 1.819742843008521e-82
+The differences are statistically significant at the 95% confidence level.
+
+Nemenyi Test Results (Pairwise Ranks):
+              0         1             2         3
+0  1.000000e+00  0.000000  3.221657e-10  0.000000
+1  0.000000e+00  1.000000  0.000000e+00  0.482903
+2  3.221657e-10  0.000000  1.000000e+00  0.000000
+3  0.000000e+00  0.482903  0.000000e+00  1.000000
+
+Average Ranks:
+            Model  Mean Rank
+1    RandomForest   1.644068
+3         XGBoost   1.813559
+0            Ours   2.881356
+2  RegressionTree   3.661017
+Nemenyi test results saved to 'nemenyi_test_results.csv'
+Model ranks saved to 'model_ranks.csv'
+MAPE boxplot saved to 'mape_comparison.pdf'.
