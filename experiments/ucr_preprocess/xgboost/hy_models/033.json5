@@ -1,0 +1,8 @@
+{
+  learning_rate: 0.1,
+  gamma: 0,
+  max_depth: 3,
+  subsample: 0.75,
+  alpha: 0,
+  lambda: 3,
+}

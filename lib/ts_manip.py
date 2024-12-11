@@ -207,9 +207,9 @@ def sliding_win_cluster_aware_multivariate(df_series, target_column, window_size
     return np.array(X_cluster), np.array(X_pred), np.array(y)
 
 
-def custom_mape(actual, forecast):
-    act_resh = np.array(actual).reshape(-1)
-    for_resh = np.array(forecast).reshape(-1)
+def custom_mape(y_true, y_pred):
+    act_resh = np.array(y_true).reshape(-1)
+    for_resh = np.array(y_pred).reshape(-1)
     sum = 0
     for act, forec in zip(act_resh, for_resh):
         if act > 0.0:
