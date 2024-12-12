@@ -1,0 +1,1 @@
+Use correlation_trend.py and results_sil_cleaning.py. Note that in results_sil_cleaning no cleaning is actually done using the SIL

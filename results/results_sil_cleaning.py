@@ -11,7 +11,7 @@
 #            "../experiments/ucr_no_preprocess/hyp_randomforest_ucr", 
 #            "../experiments/ucr_no_preprocess/hyp_rt_ucr", 
 #            "../experiments/ucr_no_preprocess/hyp_xgboost_ucr"]
-# models = ["Ours", "RandomForest", "RegressionTree", "XGBoost"]
+# models = ["Dual Stage", "RandomForest", "RegressionTree", "XGBoost"]
 
 # # Initialize a dictionary to hold results
 # data = {model: None for model in models}
@@ -32,8 +32,8 @@
 
 # data = {model: filter_sil_hyp(df) for model, df in data.items() if df is not None}
 
-# # Filter "Ours" to get the best result for each series (minimum MSE and MAPE)
-# ours_data = data["Ours"]
+# # Filter "Dual Stage" to get the best result for each series (minimum MSE and MAPE)
+# ours_data = data["Dual Stage"]
 # if ours_data is not None:
 #     best_ours_mse = ours_data.loc[ours_data.groupby("Series")["Final MSE"].idxmin()]
 #     best_ours_mape = ours_data.loc[ours_data.groupby("Series")["Final MSE"].idxmin()]
@@ -41,7 +41,7 @@
 #     raise ValueError("Data for 'Ours' not found!")
 
 # # Merge all models' data based on "Series"
-# results = best_ours_mse[["Series", "Final MSE"]].rename(columns={"Final MSE": "Ours"})
+# results = best_ours_mse[["Series", "Final MSE"]].rename(columns={"Final MSE": "Dual Stage"})
 # for model in models[1:]:
 #     if data[model] is not None:
 #         results = results.merge(
@@ -88,13 +88,13 @@
 # print("Nemenyi test results saved to 'nemenyi_test_results.csv'")
 # print("Model ranks saved to 'model_ranks.csv'")
 
-# # Count the number of times "Ours" is better than others
-# comparison_counts = {model: {"better": 0, "equal": 0, "lesser": 0} for model in models if model != "Ours"}
+# # Count the number of times "Dual Stage" is better than others
+# comparison_counts = {model: {"better": 0, "equal": 0, "lesser": 0} for model in models if model != "Dual Stage"}
 # for _, row in results.iterrows():
 #     for model in models[1:]:
-#         if row["Ours"] < row[model]:
+#         if row["Dual Stage"] < row[model]:
 #             comparison_counts[model]["better"] += 1
-#         elif row["Ours"] == row[model]:
+#         elif row["Dual Stage"] == row[model]:
 #             comparison_counts[model]["equal"] += 1
 #         else:
 #             comparison_counts[model]["lesser"] += 1
@@ -158,8 +158,34 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import friedmanchisquare
-from scikit_posthocs import posthoc_nemenyi_friedman, sign_array, critical_difference_diagram
+from scikit_posthocs import posthoc_nemenyi_friedman, critical_difference_diagram, sign_array
 from matplotlib.backends.backend_pdf import PdfPages
+from custom_code_critical_diagram import graph_ranks
+def convert_nemenyi_to_linear(matrix, model_names, alpha=0.05):
+    """
+    Convert a Nemenyi test p-value matrix into a linear format with tuples.
+
+    Args:
+    - matrix (pd.DataFrame): Nemenyi p-value matrix as a DataFrame.
+    - model_names (list): List of model names corresponding to the matrix indices.
+    - alpha (float): Significance level for determining statistical relevance.
+
+    Returns:
+    - List of tuples in the format (model1, model2, p-value, is_significant).
+    """
+    linear_format = []
+    num_models = len(model_names)
+
+    for i in range(num_models):
+        for j in range(i + 1, num_models):  # Only upper triangular values
+            p_value = matrix.iloc[i, j]
+            is_significant = p_value < alpha
+            linear_format.append((model_names[i], model_names[j], p_value, is_significant))
+    
+    return linear_format
+
+
+
 def filter_by_ours_series(models_dict, ours_model):
     """
     Filtra i dataframe nel dizionario per mantenere solo le righe dove la colonna 'Series'
@@ -196,7 +222,7 @@ folders = [
             "../experiments/ucr_no_preprocess/hyp_rt_ucr", 
             "../experiments/ucr_no_preprocess/hyp_randomforest_ucr", 
            "../experiments/ucr_no_preprocess/hyp_xgboost_ucr"]
-models = [ "Ours",  "RegressionTree", "RandomForest", "XGBoost" ]
+models = [ "Dual Stage",  "RegressionTree", "RandomForest", "XGBoost" ]
 
 # Initialize a dictionary to hold results
 data = {model: None for model in models}
@@ -220,19 +246,19 @@ for folder, model in zip(folders, models):
     else:
         print(f"File not found: {file_path}")
 
-# Filter "Ours" to get the best result for each series (minimum MSE and MAPE)
-# print(data["Ours"])
+# Filter "Dual Stage" to get the best result for each series (minimum MSE and MAPE)
+# print(data["Dual Stage"])
 # exit(1)
-ours_data = data["Ours"]
+ours_data = data["Dual Stage"]
 if ours_data is not None:
     series = ours_data.loc[ours_data.groupby("Series")["Final MSE"].idxmin()]
     best_ours_mse = ours_data.loc[ours_data.groupby("Series")["Final MSE"].idxmin()]
 else:
     raise ValueError("Data for 'Ours' not found!")
-data["Ours"] = best_ours_mse
-data = filter_by_ours_series(data, data["Ours"] )
+data["Dual Stage"] = best_ours_mse
+data = filter_by_ours_series(data, data["Dual Stage"] )
 #Merge all models' data based on "Series"
-results = best_ours_mse[["Series", "Final MSE"]].rename(columns={"Final MSE": "Ours"})
+results = best_ours_mse[["Series", "Final MSE"]].rename(columns={"Final MSE": "Dual Stage"})
 for model in models[1:]:
     if data[model] is not None:
         results = results.merge(
@@ -257,18 +283,45 @@ else:
 
 # Perform the Nemenyi test before outlier removal (using MSE)
 nemenyi_results = posthoc_nemenyi_friedman(mse_values)
-
+nemenyi_linear = convert_nemenyi_to_linear(nemenyi_results, models)
+print(nemenyi_linear)
 # Recalculate ranks based on relative performance
 ranks = np.zeros_like(mse_values)
 for i, row in enumerate(mse_values):
     ranks[i] = np.argsort(np.argsort(row)) + 1  # Rank each row
 mean_ranks = np.mean(ranks, axis=0)
 rank_table = pd.DataFrame({"Model": models, "Mean Rank": mean_ranks})
+# rank_series = result_series = pd.Series(data=rank_table['Mean Rank'].values, index=rank_table['Model'])
+# rank_series.name = None
+# Set 'Model' as the index
+new_rank = rank_table.copy()
+new_rank.set_index('Model', inplace=True)
+
+# Extract 'Mean Rank' as a Series
+mean_rank_series = new_rank['Mean Rank']
+
+# Remove the name of the Series
+mean_rank_series.index.name = None
+font = {'family': 'sans-serif',
+    'color':  'black',
+    'weight': 'normal',
+    'size': 22,
+    }
+graph_ranks(mean_rank_series.values, mean_rank_series.keys(), nemenyi_linear,
+            cd=None, reverse=True, width=9, textspace=1.5, labels=True)
+plt.savefig('cd-diagram.pdf',bbox_inches='tight', dpi = 1600)
+plt.close("all")
+# print(mean_rank_series.index.name)
+# #mean_rank_series.name = None
+
+# print(type(mean_rank_series))
+# print(mean_rank_series)
+# exit(1)
 #rank_table = pd.Series({"Model": models, "Mean Rank": mean_ranks})
 #rank_table = pd.DataFrame([{m :r } for m,r in zip(models, mean_ranks)])
 
 # print(rank_table)
-rank_table = rank_table.sort_values(by="Mean Rank")
+rank_table = rank_table.sort_values(by="Mean Rank").reset_index(drop=True)
 
 # Output results
 print("\nNemenyi Test Results (Pairwise Ranks):")
@@ -282,11 +335,12 @@ rank_table = rank_table.reset_index(drop=True)
 plt.figure(figsize=(10, 2), dpi=1600)
 # print(rank_table)
 # exit(1)
-print(nemenyi_results.values)
-print(sign_array(nemenyi_results, alpha=0.05))
-# exit(1)
-critical_difference_diagram(ranks = rank_table["Mean Rank"], sig_matrix=sign_array(nemenyi_results))
-plt.savefig("color_plot.pdf", format = "pdf", dpi = 1600)
+# p_values = np.copy(np.array(nemenyi_results.values))
+# print(p_values)
+# print(sign_array(p_values, alpha=0.05))
+# # exit(1)
+# critical_difference_diagram(ranks = rank_table["Mean Rank"], sig_matrix=nemenyi_results)
+# plt.savefig("critical_difference_scikit.pdf", format = "pdf", dpi = 1600)
 # Save the Nemenyi results to a CSV file for easier viewing
 nemenyi_results.to_csv("nemenyi_test_results.csv")
 rank_table.to_csv("model_ranks.csv", index=False)
@@ -325,7 +379,9 @@ with PdfPages("mape_comparison.pdf") as pdf:
     # Create boxplot
     plt.boxplot(mape_data, labels=models)
     #plt.title("Boxplot of Final MAPE for Different Models")
-    plt.xlabel("MAPE", fontsize = 14)
+    plt.xlabel("Models", fontsize = 14)
+    plt.ylabel("MAPE", fontsize = 14)
+
     plt.xticks(fontsize=14)  # Set the font size of x-ticks
     plt.yticks(fontsize=14)  # Set the font size of x-ticks
 
