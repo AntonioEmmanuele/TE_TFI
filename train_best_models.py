@@ -27,7 +27,7 @@ def get_series(folder, series_name):
     assert 1 == 0, "Malformatted series"
     return None
 
-models_to_train = 2
+models_to_train = 30
 # Experiments
 series_path = "./datasets/processed"
 out_dir = "./experiments/ucr_no_preprocess_timings"

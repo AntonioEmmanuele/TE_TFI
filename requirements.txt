@@ -1,9 +1,9 @@
-scikit-learn
+scikit-learn==1.5.0
 tslearn
 tqdm
 numpy
 pandas
-joblib
+joblib==1.4.0
 json5
 h5py
-xgboost
+xgboost==2.1.0
