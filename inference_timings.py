@@ -158,7 +158,7 @@ for series_name, series_file_path  in tqdm(zip(series_names, series_paths), desc
             model_out = os.path.join(general_path, f"{series_name}.joblib")
             model = joblib.load(model_out)            
             time_res = validate_timings(model, t_X)
-            print(f" XGB {time_res}")
+            
             # # Test for single core
             # model.set_params(n_jobs = 1)
             # results, single_preds = validate_timings(model, t_X)
@@ -239,10 +239,10 @@ for series_name, series_file_path  in tqdm(zip(series_names, series_paths), desc
             
 
         elif models[model_idx] == "Dual-Stage":
-            singlecore_csv_out = os.path.join(out_dir, f"dual_stage_singlecore.csv")
-            multicore_csv_out = os.path.join(out_dir, f"dual_stage_multicore.csv")                   
-            sp_singlecore_csv_out = os.path.join(out_dir, f"sp_dual_stage_singlecore.csv")
-            sp_multicore_csv_out = os.path.join(out_dir, f"sp_dual_stage_multicore.csv")
+            # singlecore_csv_out = os.path.join(out_dir, f"dual_stage_singlecore.csv")
+            # multicore_csv_out = os.path.join(out_dir, f"dual_stage_multicore.csv")                   
+            # sp_singlecore_csv_out = os.path.join(out_dir, f"sp_dual_stage_singlecore.csv")
+            # sp_multicore_csv_out = os.path.join(out_dir, f"sp_dual_stage_multicore.csv")
 
             general_path = os.path.join(in_dir, "dual_stage")
             if not os.path.exists(general_path):
@@ -274,7 +274,10 @@ for series_name, series_file_path  in tqdm(zip(series_names, series_paths), desc
             # # Append single preds
             # sp_multicore_df = pd.DataFrame.from_dict({series_name:single_preds}, orient="index", columns=percentages)
             # sp_multicore_df.to_csv(sp_multicore_csv_out, index=False, mode="a", header=not os.path.exists(sp_multicore_csv_out))
-            
+        dict_results = {"Series" : series_name, "Model": models[model_idx], "AvgTime": time_res}
+        df = pd.DataFrame(dict_results)
+        timing_path = os.join(out_dir, "timings.csv")
+        df.to_csv(timing_path, mode = "a", index= False, header = not os.path.exists(timing_path))
 names_out = os.path.join(out_dir, "series_names.json5")
 files_out = os.path.join(out_dir, "series_paths.json5")
 
