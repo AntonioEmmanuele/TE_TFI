@@ -47,7 +47,7 @@ def validate_timings(model, t_X):
     #     results.append(inference_time_microseconds)
     #     average_single.append(inference_time_microseconds/len(X_subset))
     # return results, average_single
-    num_samples = int(len(t_X) * (15.0 / 100))
+    num_samples = len(t_X)
     X_subset = t_X[:num_samples]
     st = 0
     for x in X_subset:
@@ -97,10 +97,11 @@ def validate_timings_te_tfi(model, t_X):
 #    return results, average_single
 
 series_path = "./datasets/processed"
-in_dir = "./experiments/ucr_no_preprocess_timings"
+#in_dir = "./experiments/ucr_no_preprocess_timings"
+in_dir = "./experiments/ucr_no_preprocess_timings_complete"
 names_pth =  os.path.join(in_dir, "series_names.json5")
 files_pth =  os.path.join(in_dir, "series_paths.json5")
-out_dir = "./experiments/ucr_no_preprocess_timings/results"
+out_dir = "./experiments/ucr_no_preprocess_timings/results_complete"
 hy_models = "hy_models"
 stats_hyp = "stats_hyp.csv"
 models = ["RT", "RF", "XGB", "Dual-Stage"]
