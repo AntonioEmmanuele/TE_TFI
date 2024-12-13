@@ -27,10 +27,10 @@ def get_series(folder, series_name):
     assert 1 == 0, "Malformatted series"
     return None
 
-models_to_train = 30
+models_to_train = 250
 # Experiments
 series_path = "./datasets/processed"
-out_dir = "./experiments/ucr_no_preprocess_timings"
+out_dir = "./experiments/ucr_no_preprocess_timings_complete"
 hy_models = "hy_models"
 stats_hyp = "stats_hyp.csv"
 models = ["RT", "RF", "XGB", "Dual-Stage"]
@@ -52,8 +52,8 @@ models_stats[-1] = models_stats[-1].reset_index(drop=True)
 # min_mse_df = min_mse_df.reset_index(drop=True)
 
 series_list = set(models_stats[-1]["Series"].astype("str").to_list())
-samples_series = random.sample(list(series_list), models_to_train)
-
+#samples_series = random.sample(list(series_list), models_to_train)
+samples_series = list(series_list)
 test_samples_sizes = []
 files_to_save = []
 # Create the series for the window
