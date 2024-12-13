@@ -39,7 +39,10 @@ class TE_TFI:
         self.cluster_cfg = cluster_cfg
         self.random_state = random_state
         self.tree_confs = tree_confs
-        self.n_jobs = n_jobs
+        if n_clusters > n_jobs and n_jobs != 1:
+            self.n_jobs = n_clusters
+        else:
+            self.n_jobs = n_jobs
         # Initialize the cluster
         if cluster_cfg is not None:
             self.cluster = TE_TFI.supported_clusters[cluster_type](**cluster_cfg, n_clusters = n_clusters, random_state = random_state)
@@ -65,9 +68,13 @@ class TE_TFI:
         #labels = self.cluster.fit_predict(hyst_buffers_cl)
         # Now train the trees.
         args = [[self.trees[i], train_wins_tree[labels == i], train_target_tree[labels == i]] for i in range(0, self.n_clusters)]
-        # Starmap works with a copy, so reassign the trees.
-        self.trees = self.pool.starmap(train_tree, args)
-        
+        if self.n_jobs > 1:
+            # Starmap works with a copy, so reassign the trees.
+             self.trees = self.pool.starmap(train_tree, args)
+        else:
+            for i,arg in enumerate(args):
+                self.trees[i] = train_tree(arg[0], arg[1], arg[2])
+
     def predict_clust_ts(self, hyst_buff_cl : np.ndarray, wins_tree : np.ndarray):
         assert hyst_buff_cl.ndim == 2, "Cluster hystorical buffer should be a 2D array"
         assert wins_tree.ndim == 2, "Tree windows should be a 2D array"
@@ -80,8 +87,14 @@ class TE_TFI:
         # Divide the ids for sorting.
         # This vector contains for each tree the set of indexes in the final vector for each sample.
         final_vector_indexes = [np.where(ids_tree == i)[0] for i in range(0, self.n_clusters)]
-        # Predict samples.
-        preds_per_tree = self.pool.starmap(predict_tree, args)
+        if self.n_jobs > 1:
+            # Predict samples.
+            preds_per_tree = self.pool.starmap(predict_tree, args)
+        else:
+            preds_per_tree = [[] for t in self.trees]
+            for i, arg in enumerate(args):
+                preds_per_tree[i] = predict_tree(arg[0], arg[1])
+        
         # Sort values for each different tree.
         for single_tree_preds, indexes in zip(preds_per_tree, final_vector_indexes):
             to_ret[indexes] = single_tree_preds
