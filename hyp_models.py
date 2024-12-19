@@ -5,7 +5,7 @@ from src.te_tfi_fns import list_partitioning, generate_hyperparameter_grid
 import os
 from tslearn.clustering import TimeSeriesKMeans
 from src.te_tfi_model import TE_TFI
-from lib.ts_manip import sliding_win_target, custom_mape
+from lib.ts_manip import sliding_win_target, custom_mape, sliding_windows_multivariate_target
 #sliding_win_cluster_aware, sliding_win_cluster_aware_multivariate
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 #from lib.ucr_parser import get_series_name
@@ -141,9 +141,10 @@ if __name__ == "__main__":
     parser.add_argument('--is_multivariate', type=int, required=False, default=0)
     parser.add_argument('--target_column', type=str, required=False, default=None)
     parser.add_argument('--preprocess', type=int, required=False, default = 1 )
+ 
 
     args = parser.parse_args()
-    
+    assert args.is_multivariate == 0 or (args.is_multivariate == 1 and args.target_column != None), "If the series is multivariate, please provide a correct target column!"
     if args.model == "RT":
         model = DecisionTreeRegressor()
         param_grid = {
@@ -165,7 +166,7 @@ if __name__ == "__main__":
         param_grid = {                
             'learning_rate':    [0.025, 0.05, 0.1, 0.2],
             'gamma':            [0, 0.1, 0.2, 0.5],    
-            'max_depth':        [2, 3, 5, 7, 10, 15, 20],                               
+            'max_depth':        [2, 3, 5, 7, 10],                               
             'subsample':        [0.5, 0.75, 1.0],
             'alpha':            [0, 0.1, 0.2],
             'lambda':           [1, 2, 3],              
@@ -177,36 +178,49 @@ if __name__ == "__main__":
         os.makedirs(args.out_path)
     
     # Load the series.
-    series = np.loadtxt(args.series_path, dtype=float)
-    file = args.series_path.split("/")[-1]
-    series_name = file[:3]
-    len_series = len(series)
-    if args.preprocess == 1:
-        # Reshape to 2D array
-        series = series.reshape(-1, 1)  # Shape becomes (n_samples, 1)
-        # Initialize the scaler
-        scaler = MinMaxScaler()
-        # Fit and transform
-        X_scaled = scaler.fit_transform(series)
-        # Flatten back to 1D if needed
-        series = X_scaled.flatten()
-        
-    # Manage seasonality.
-    if args.path_stagionality is not None:
-        stag_csv = pd.read_csv(args.path_stagionality)
-        has_seasonality = stag_csv.loc[stag_csv['file'] == file, 'has_seasonality'].values[0]
-        has_seasonality = stag_csv.loc[stag_csv['file'] == file, 'has_seasonality'].values[0]
-        if has_seasonality:
-            biggest_lag = stag_csv.loc[stag_csv['file'] == file, 'biggest_lag'].values[0]
-            win_size = int(biggest_lag * args.lag_percentage)
+    if args.is_multivariate == 0:
+        series = np.loadtxt(args.series_path, dtype=float)
+        file = args.series_path.split("/")[-1]
+        series_name = file[:3]
+        len_series = len(series)
+        if args.preprocess == 1:
+            # Reshape to 2D array
+            series = series.reshape(-1, 1)  # Shape becomes (n_samples, 1)
+            # Initialize the scaler
+            scaler = MinMaxScaler()
+            # Fit and transform
+            X_scaled = scaler.fit_transform(series)
+            # Flatten back to 1D if needed
+            series = X_scaled.flatten()
+            
+        # Manage seasonality.
+        if args.path_stagionality is not None:
+            stag_csv = pd.read_csv(args.path_stagionality)
+            has_seasonality = stag_csv.loc[stag_csv['file'] == file, 'has_seasonality'].values[0]
+            has_seasonality = stag_csv.loc[stag_csv['file'] == file, 'has_seasonality'].values[0]
+            if has_seasonality:
+                biggest_lag = stag_csv.loc[stag_csv['file'] == file, 'biggest_lag'].values[0]
+                win_size = int(biggest_lag * args.lag_percentage)
+            else:
+                win_size = args.win_size
         else:
             win_size = args.win_size
     else:
-        win_size = args.win_size
+        # For now no minmaxing
+        series = pd.read_csv(args.series_path)
+        series_name = "traffic" 
+        len_series = len(series)
+        # For all the implemented multivariate datasets the seasonality is 24
+        biggest_lag = 24
+        win_size = int(biggest_lag * args.lag_percentage)
     # Params
     train_size = int(0.7 * len(series))
-    train_series = series[0 : train_size]
-    t_X, t_y = sliding_win_target(train_series, win_size, 1)
+    if args.is_multivariate == 0:
+        train_series = series[0 : train_size]
+        t_X, t_y = sliding_win_target(train_series, win_size, 1)
+    else:
+        train_series = series.iloc[0 : train_size]
+        t_X, t_y = sliding_windows_multivariate_target(train_series, win_size, args.target_column, 1)
     print("Launching Hyp")
     #best_cfg, best_mse, best_mape, best_mae =  hyp_model(model, param_grid, t_X, t_y.ravel(), 5, 0.5, args.n_jobs, False, False, None)
     start_time  = time.time()
@@ -217,7 +231,10 @@ if __name__ == "__main__":
     print(best_mse)
     print(f"Validating the final model.")
     # Validate the final accuracy
-    t_X, t_y = sliding_win_target(series, win_size, 1)
+    if args.is_multivariate == 0: 
+        t_X, t_y = sliding_win_target(series, win_size, 1)
+    else:
+        t_X, t_y = sliding_windows_multivariate_target(series, win_size, args.target_column, 1)
     # Obtain results
     definitive_mse, definitive_mape, definitive_mae =  validate_series_general([best_cfg], model, t_X, t_y.ravel(), cv_order = 5, starting_percentage=0.5)
     print(f"Final Model: Best-CFG MSE : {definitive_mse} MAPE: {definitive_mape} MAE: {definitive_mae}")

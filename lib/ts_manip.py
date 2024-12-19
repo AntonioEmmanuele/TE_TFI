@@ -192,6 +192,18 @@ def sliding_windows_multivariate(df_series, window_size):
         subsequences.append(sub)
     return np.array(subsequences)
 
+def sliding_windows_multivariate_target(df_series, window_size, target_column, win_out):
+    rows = df_series.to_numpy()
+    tc = df_series[target_column].to_numpy().reshape(-1)
+    subsequences = []
+    target_sequences = []
+    for i in range(len(rows) - window_size + 1):
+        sub = rows[i:i + window_size].reshape(-1)
+        target = tc[i + window_size:i + window_size + win_out]
+        subsequences.append(sub)
+        target_sequences.append(target)
+    return np.array(subsequences), np.array(target_sequences)
+
 def sliding_win_cluster_aware_multivariate(df_series, target_column, window_size_cluster, window_size_pred, win_out_pred):
     assert window_size_cluster >= window_size_pred
     X_cluster, X_pred, y = [], [], []
