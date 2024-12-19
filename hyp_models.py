@@ -154,7 +154,7 @@ if __name__ == "__main__":
             'max_features': [ 1.0, 'sqrt', 'log2']    # Max features considered for splitting
         }
     elif args.model == "RF":
-        model = RandomForestRegressor(n_jobs = args.n_jobs, n_estimators = 100)
+        model = RandomForestRegressor(n_jobs = args.n_jobs, n_estimators = 200) # Todo: reallign with the original 100
         param_grid = {
             'max_depth': [5, 7, 10, 15, 20],      
             'min_samples_split': [2, 5, 10, 20],  # Min samples to split a node
@@ -162,10 +162,10 @@ if __name__ == "__main__":
             'max_features': [ 1.0, 'sqrt', 'log2']    # Max features considered for splitting
         }
     elif args.model == "XGB":
-        model = XGBRegressor(n_jobs = args.n_jobs, n_estimators = 100, objective = 'reg:squarederror', random_state = 42)
+        model = XGBRegressor(n_jobs = args.n_jobs, n_estimators = 200, objective = 'reg:squarederror', random_state = 42)
         param_grid = {                
-            'learning_rate':    [0.025, 0.05, 0.1, 0.2],
-            'gamma':            [0, 0.1, 0.2, 0.5],    
+            'learning_rate':    [0.025, 0.05, 0.1],
+            'gamma':            [0, 0.1, 0.2],    
             'max_depth':        [2, 3, 5, 7, 10],                               
             'subsample':        [0.5, 0.75, 1.0],
             'alpha':            [0, 0.1, 0.2],
@@ -206,9 +206,15 @@ if __name__ == "__main__":
         else:
             win_size = args.win_size
     else:
+        has_seasonality = True
         # For now no minmaxing
         series = pd.read_csv(args.series_path)
         series_name = "traffic" 
+        # Convert 'datetime' column to datetime objects
+        series['DateTime'] = pd.to_datetime(series['DateTime'])
+
+        # Convert to float representation (e.g., seconds since epoch)   
+        series['DateTime'] = series['DateTime'].apply(lambda x: x.timestamp())
         len_series = len(series)
         # For all the implemented multivariate datasets the seasonality is 24
         biggest_lag = 24

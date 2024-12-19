@@ -197,11 +197,21 @@ def sliding_windows_multivariate_target(df_series, window_size, target_column, w
     tc = df_series[target_column].to_numpy().reshape(-1)
     subsequences = []
     target_sequences = []
-    for i in range(len(rows) - window_size + 1):
+    for i in range(len(rows) - window_size - win_out + 1):
         sub = rows[i:i + window_size].reshape(-1)
-        target = tc[i + window_size:i + window_size + win_out]
+        target = tc[i + window_size : i + window_size + win_out]
         subsequences.append(sub)
         target_sequences.append(target)
+    #print(target_sequences)
+    # # Check for lists with different lengths
+    # for i, list1 in enumerate(target_sequences):
+    #     for j, list2 in enumerate(target_sequences):
+    #         if i < j:  # Avoid duplicate comparisons and self-comparison
+    #             if len(list1) != len(list2):
+    #                 print(f"Lists at index {i} and {j} have different lengths: {len(list1)} and {len(list2)}")
+    #                 exit(1)
+    # print("Equals ")
+    # exit(1)
     return np.array(subsequences), np.array(target_sequences)
 
 def sliding_win_cluster_aware_multivariate(df_series, target_column, window_size_cluster, window_size_pred, win_out_pred):
